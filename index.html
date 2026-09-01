@@ -771,7 +771,7 @@ const LANGS = {
    STATE
 ══════════════════════════════════════ */
 let curLang='ar', t=LANGS.ar;
-let map, userMarker, modalMap, modalMarker;
+let map, userMarker, userAccuracyCircle, modalMap, modalMarker;
 let currentUser=null, allStores={}, storeMarkers={};
 let selectedStoreId=null, drawerStoreId=null, drawerProducts={};
 let selectedSellerStoreId=null, editingStoreId=null, editingProductId=null;
@@ -799,9 +799,11 @@ const netToast=(msg,type,dur=0)=>{
 window.showScreen=id=>{
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $(id).classList.add('active');
-  if(id==='customer'&&!map)initMap();
+  if(id==='customer'){
+    if(!map) initMap();
+    else setTimeout(()=>map&&map.invalidateSize(),300);
+  }
 };
-window.closeModal=id=>$(id).classList.remove('open');
 window.goToAuth=()=>showScreen('auth');
 window.togglePriceField=()=>{
   const h=$('p-hide-toggle').classList.contains('on');
@@ -982,9 +984,20 @@ window.applyAdvancedFilters=(close=false)=>{
    MAP
 ══════════════════════════════════════ */
 function initMap(){
-  map=L.map('map',{zoomControl:false}).setView([userLat,userLng],14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+  map=L.map('map',{zoomControl:false,preferCanvas:true}).setView([userLat,userLng],14);
+
+  /* ── CartoDB Voyager — أقرب ثيم لـ Google Maps ── */
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> © <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+    subdomains:'abcd', maxZoom:19, crossOrigin:true
+  }).addTo(map);
+
   L.control.zoom({position:'bottomright'}).addTo(map);
+  L.control.scale({imperial:false,position:'bottomleft'}).addTo(map);
+
+  /* إصلاح مشكلة الـ flash عند أول تحميل */
+  setTimeout(()=>map&&map.invalidateSize(),300);
+
   renderCatBar();listenStores();locateMe();
 }
 
@@ -994,17 +1007,34 @@ window.locateMe=()=>{
   navigator.geolocation.getCurrentPosition(
     pos=>{
       userLat=pos.coords.latitude;userLng=pos.coords.longitude;
+      const acc=pos.coords.accuracy;
       if(!map)return;
-      map.setView([userLat,userLng],15);
+      /* انتقال سلس مثل Google Maps */
+      map.flyTo([userLat,userLng],15,{animate:true,duration:1.2});
       if(userMarker)map.removeLayer(userMarker);
+      if(userAccuracyCircle)map.removeLayer(userAccuracyCircle);
+      /* دائرة الدقة فقط إذا كانت معقولة */
+      if(acc<500){
+        userAccuracyCircle=L.circle([userLat,userLng],{
+          radius:acc,color:'#3b82f6',fillColor:'#3b82f6',
+          fillOpacity:0.08,weight:1,interactive:false
+        }).addTo(map);
+      }
       userMarker=L.marker([userLat,userLng],{icon:L.divIcon({
         className:'',
-        html:`<div style="width:20px;height:20px;border-radius:50%;background:var(--bl);border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.2)"></div>`,
+        html:`<div style="width:20px;height:20px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.2)"></div>`,
         iconSize:[20,20],iconAnchor:[10,10]
       })}).addTo(map).bindPopup(t.yourLoc);
+      /* إصلاح flash بعد flyTo */
+      setTimeout(()=>map&&map.invalidateSize(),350);
       toast(t.located);
     },
-    err=>{const msgs={1:t.gpsDenied,2:t.gpsFail,3:t.gpsTimeout};toast(msgs[err.code]||t.gpsFail);},
+    err=>{
+      /* تحمل الخطأ — الخريطة تبقى شغالة على الموقع الافتراضي */
+      const msgs={1:t.gpsDenied,2:t.gpsFail,3:t.gpsTimeout};
+      toast(msgs[err.code]||t.gpsFail);
+      setTimeout(()=>map&&map.invalidateSize(),300);
+    },
     {enableHighAccuracy:true,timeout:12000,maximumAge:0}
   );
 };
@@ -1112,6 +1142,8 @@ window.closeDrawer=()=>{
   selectedStoreId=null;
   $('drawer-back').classList.remove('open');$('store-drawer').classList.remove('open');
   renderMapPins();
+  /* إصلاح الخريطة بعد إغلاق الدرج */
+  setTimeout(()=>map&&map.invalidateSize(),300);
 };
 window.openWa  =num=>window.open(`https://wa.me/${num.replace(/\D/g,'')}`, '_blank');
 window.openCall=num=>window.open(`tel:${num}`, '_self');
@@ -1205,7 +1237,14 @@ window.openProdDetail=async(storeId,prodId)=>{
   if(store?.phone)   cr.innerHTML+=`<button class="btn-call" onclick="openCall('${store.phone}')">${t.callBtn}</button>`;
   $('prod-detail-modal').classList.add('open');
 };
-window.closeProdDetail=()=>$('prod-detail-modal').classList.remove('open');
+window.closeProdDetail=()=>{
+  $('prod-detail-modal').classList.remove('open');
+  setTimeout(()=>map&&map.invalidateSize(),300);
+};
+window.closeModal=id=>{
+  $(id).classList.remove('open');
+  if(id==='store-modal')setTimeout(()=>map&&map.invalidateSize(),300);
+};
 
 /* ══════════════════════════════════════
    AUTH
