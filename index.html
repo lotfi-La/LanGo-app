@@ -234,6 +234,19 @@ select.form-input{appearance:none}
 .delivery-badge.ship{background:#dbeafe;color:#1d4ed8}
 .delivery-badge.cod{background:#dcfce7;color:#15803d}
 
+/* ── NAVIGATION HUD ── */
+.nav-hud{position:fixed;bottom:0;left:0;right:0;z-index:450;padding:0 12px 28px;pointer-events:none;animation:slideUpIn .35s ease}
+@keyframes slideUpIn{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.nav-card{background:rgba(17,24,39,.96);backdrop-filter:blur(16px);border-radius:22px;padding:14px 16px;color:#fff;display:flex;align-items:center;gap:12px;pointer-events:auto;box-shadow:0 -4px 30px rgba(0,0,0,.35)}
+.nav-icon{width:48px;height:48px;border-radius:14px;background:rgba(249,115,22,.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.nav-info{flex:1;min-width:0}
+.nav-dist{font-size:26px;font-weight:900;color:#f97316;line-height:1}
+.nav-time{font-size:12px;color:#9ca3af;margin-top:3px}
+.nav-store{font-size:11px;color:#6b7280;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-stop{background:#ef4444;border:none;border-radius:12px;padding:12px 14px;color:#fff;font-size:13px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.btn-nav{flex:2;height:42px;border-radius:12px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;font-size:13px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 8px rgba(249,115,22,.4)}
+.btn-nav:active{transform:scale(.97)}
+
 /* ── SPINNER ── */
 .spinner{width:24px;height:24px;border:3px solid rgba(249,115,22,.25);border-top-color:var(--or);border-radius:50%;animation:spin .7s linear infinite;margin:20px auto}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;z-index:2000;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap;font-family:'Cairo',sans-serif;max-width:90vw}
@@ -645,6 +658,21 @@ select.form-input{appearance:none}
   </div>
 </div>
 
+<div id="nav-hud" style="display:none" class="nav-hud">
+  <div class="nav-card">
+    <div class="nav-icon">🧭</div>
+    <div class="nav-info">
+      <div class="nav-dist" id="nav-dist">–</div>
+      <div class="nav-time" id="nav-time">جاري الحساب...</div>
+      <div class="nav-store" id="nav-store-lbl"></div>
+    </div>
+    <button class="nav-stop" onclick="stopNavigation()">
+      <span style="font-size:18px">⏹</span>
+      <span id="nav-stop-lbl" style="font-size:10px">إيقاف</span>
+    </button>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 <div id="net-toast" class="net-toast"></div>
 
@@ -841,6 +869,10 @@ let currentStatusMode='manual';
 let fOpenOnly=false, fRadius=0, fOffersOnly=false, fMinPrice=0, fMaxPrice=0, fDelivery=false, fCOD=false;
 // Search state
 let searchQuery='';
+// Navigation state
+let navWatchId=null, navPolyline=null, navPolylineDone=null;
+let navRouteCoords=[], navTargetStore=null;
+let navLastUpdate=0;
 // Pending image upload file
 let pendingImgFile=null;
 
@@ -1262,6 +1294,7 @@ window.openDrawer=storeId=>{
     <div class="contact-row">
       ${s.whatsapp?`<button class="btn-wa" onclick="openWa('${s.whatsapp}')">${t.whatsapp}</button>`:''}
       ${s.phone?`<button class="btn-call" onclick="openCall('${s.phone}')">${t.callBtn}</button>`:''}
+      ${s.location?.lat?`<button class="btn-nav" onclick="startNavigation('${storeId}')">🧭 ${curLang==='ar'?'التوجه إليه':'Navigate'}</button>`:''}
     </div>`;
   $('d-total').textContent='–';$('d-avail').textContent='–';
   $('d-products').innerHTML=`<div class="skel-card"><div class="skel-thumb skeleton"></div><div style="flex:1"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div><div class="skel-line xshort skeleton"></div></div></div><div class="skel-card"><div class="skel-thumb skeleton"></div><div style="flex:1"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div></div></div><div class="skel-card"><div class="skel-thumb skeleton"></div><div style="flex:1"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div></div></div>`;
@@ -1658,6 +1691,165 @@ window.deleteProduct=async(storeId,prodId)=>{
     const names=Object.values(allProds).map(p=>p.name).filter(Boolean);
     await update(ref(db,`stores/${storeId}`),{product_names:names});
   }catch(e){toast(t.saveErr+e.message);}
+};
+
+/* ══════════════════════════════════════
+   NAVIGATION — GTA STYLE
+══════════════════════════════════════ */
+
+/* ── حساب المسار عبر OSRM API ── */
+window.startNavigation=async storeId=>{
+  const store=allStores[storeId];
+  if(!store?.location?.lat){toast('❌ موقع المحل غير محدد');return;}
+
+  /* تحقق من وجود موقع المستخدم */
+  if(!userLat||!userLng){toast('⚠️ يرجى تحديد موقعك أولاً 📍');locateMe();return;}
+
+  navTargetStore=store;
+  const tLat=store.location.lat, tLng=store.location.lng;
+  toast('⏳ جاري حساب المسار...',4000);
+
+  try{
+    const url=`https://router.project-osrm.org/route/v1/driving/${userLng},${userLat};${tLng},${tLat}?overview=full&geometries=geojson`;
+    const res=await fetch(url);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+
+    if(!data.routes?.length){toast('❌ لم يُوجد مسار بين الموقعين');return;}
+
+    const route=data.routes[0];
+    navRouteCoords=route.geometry.coordinates; /* [[lng,lat],...] */
+    const distKm=(route.distance/1000).toFixed(1);
+    const durMin=Math.ceil(route.duration/60);
+
+    /* امسح أي مسار قديم */
+    _clearRoute();
+
+    /* ── رسم خط المسار المتبقي (برتقالي سميك) ── */
+    const latlngs=navRouteCoords.map(c=>[c[1],c[0]]);
+    navPolyline=L.polyline(latlngs,{
+      color:'#f97316',weight:6,opacity:.9,
+      lineCap:'round',lineJoin:'round'
+    }).addTo(map);
+
+    /* ── خط المسار المقطوع (رمادي خلف المستخدم) ── */
+    navPolylineDone=L.polyline([],{
+      color:'#6b7280',weight:6,opacity:.5,
+      lineCap:'round',lineJoin:'round'
+    }).addTo(map);
+
+    /* ── نقطة الوجهة (pin برتقالي ثابت) ── */
+    navPolyline._destMarker=L.marker([tLat,tLng],{icon:L.divIcon({
+      className:'',
+      html:`<div style="width:32px;height:32px;border-radius:50%;background:#f97316;border:4px solid #fff;box-shadow:0 3px 12px rgba(249,115,22,.5);display:flex;align-items:center;justify-content:center;font-size:14px">🏪</div>`,
+      iconSize:[32,32],iconAnchor:[16,16]
+    })}).addTo(map);
+
+    /* ضبط نطاق الخريطة على المسار */
+    map.fitBounds(navPolyline.getBounds(),{padding:[80,60],animate:true});
+
+    /* تحديث HUD */
+    $('nav-dist').textContent=`${distKm} كم`;
+    $('nav-time').textContent=`~${durMin} ${curLang==='ar'?'دقيقة':'min'}`;
+    $('nav-store-lbl').textContent=`📍 ${store.name}`;
+    $('nav-hud').style.display='block';
+
+    /* بدء التتبع الحي */
+    _startWatch();
+    toast(`✅ ${distKm} كم — ~${durMin} ${curLang==='ar'?'دقيقة':'min'}`,3000);
+    closeDrawer();
+
+  }catch(e){
+    toast('❌ خطأ في حساب المسار — تأكد من الاتصال');
+    console.error('[NAV]',e);
+  }
+};
+
+/* ── التتبع الحي مع watchPosition ── */
+function _startWatch(){
+  if(navWatchId!==null)navigator.geolocation.clearWatch(navWatchId);
+  navWatchId=navigator.geolocation.watchPosition(
+    pos=>{
+      const now=Date.now();
+      if(now-navLastUpdate<1500)return; /* throttle ~1.5 ث */
+      navLastUpdate=now;
+      userLat=pos.coords.latitude;userLng=pos.coords.longitude;
+      /* تحديث موقع المستخدم على الخريطة */
+      if(userMarker)userMarker.setLatLng([userLat,userLng]);
+      else{
+        userMarker=L.marker([userLat,userLng],{icon:L.divIcon({
+          className:'',
+          html:`<div style="width:20px;height:20px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.2)"></div>`,
+          iconSize:[20,20],iconAnchor:[10,10]
+        })}).addTo(map);
+      }
+      _updateProgress();
+    },
+    err=>{
+      if(err.code===1)toast('⚠️ تم إيقاف الموقع — الملاحة متوقفة مؤقتاً');
+      else if(err.code===2)toast('❌ تعذّر الحصول على موقعك');
+      /* الخريطة لا تنهار — تبقى على آخر موقع معروف */
+    },
+    {enableHighAccuracy:true,maximumAge:2000,timeout:15000}
+  );
+}
+
+/* ── تحديث التقدم (Progress Tracing) ── */
+function _updateProgress(){
+  if(!navRouteCoords.length||!navPolyline)return;
+  const uLL=L.latLng(userLat,userLng);
+
+  /* أقرب نقطة على المسار */
+  let minD=Infinity,idx=0;
+  navRouteCoords.forEach((c,i)=>{
+    const d=uLL.distanceTo(L.latLng(c[1],c[0]));
+    if(d<minD){minD=d;idx=i;}
+  });
+
+  /* قسّم المسار: مقطوع + متبقٍّ */
+  const done=navRouteCoords.slice(0,idx+1).map(c=>[c[1],c[0]]);
+  const rem =navRouteCoords.slice(idx).map(c=>[c[1],c[0]]);
+  navPolylineDone?.setLatLngs(done);
+  navPolyline?.setLatLngs(rem);
+
+  /* المسافة المتبقية */
+  let remM=0;
+  for(let i=idx;i<navRouteCoords.length-1;i++){
+    remM+=L.latLng(navRouteCoords[i][1],navRouteCoords[i][0])
+           .distanceTo(L.latLng(navRouteCoords[i+1][1],navRouteCoords[i+1][0]));
+  }
+  const remKm=(remM/1000).toFixed(remM<1000?1:0);
+  const remMin=Math.max(1,Math.ceil(remM/1000/40*60));
+  $('nav-dist').textContent=remM<100?`${Math.round(remM)} م`:`${remKm} كم`;
+  $('nav-time').textContent=`~${remMin} ${curLang==='ar'?'دقيقة':'min'}`;
+
+  /* تتبع الخريطة خلف المستخدم */
+  map.panTo([userLat,userLng],{animate:true,duration:.6,noMoveStart:true});
+
+  /* وصلت! */
+  if(remM<60){
+    toast('🎉 وصلت إلى وجهتك!',4000);
+    stopNavigation();
+  }
+}
+
+/* ── تنظيف المسار من الخريطة ── */
+function _clearRoute(){
+  if(navPolyline){
+    if(navPolyline._destMarker)map.removeLayer(navPolyline._destMarker);
+    map.removeLayer(navPolyline);navPolyline=null;
+  }
+  if(navPolylineDone){map.removeLayer(navPolylineDone);navPolylineDone=null;}
+}
+
+/* ── إيقاف الملاحة ── */
+window.stopNavigation=()=>{
+  if(navWatchId!==null){navigator.geolocation.clearWatch(navWatchId);navWatchId=null;}
+  _clearRoute();
+  navRouteCoords=[];navTargetStore=null;
+  $('nav-hud').style.display='none';
+  toast('⏹ تم إيقاف الملاحة');
+  setTimeout(()=>map&&map.invalidateSize(),300);
 };
 
 /* ══════════════════════════════════════
