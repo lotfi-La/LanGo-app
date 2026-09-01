@@ -188,6 +188,28 @@ select.form-input{appearance:none}
 .prod-detail-img-placeholder{width:100%;height:200px;display:flex;align-items:center;justify-content:center;font-size:64px;background:#f5f0ea;border-radius:24px 24px 0 0}
 .prod-detail-body{padding:16px 18px}
 
+/* ── SEARCH FILTER SHEET ── */
+.sf-sheet{background:#fff;border-radius:24px 24px 0 0;padding:0 18px 36px;width:100%;max-height:88vh;overflow-y:auto}
+.sf-handle{display:flex;justify-content:center;padding:14px 0 16px}
+.sf-handle-bar{width:40px;height:5px;border-radius:99px;background:#e5e7eb}
+.sf-search-input{width:100%;height:48px;border-radius:14px;border:2px solid #e5e7eb;padding:0 44px 0 14px;font-size:14px;font-family:'Cairo',sans-serif;outline:none;text-align:right;direction:rtl;transition:.2s}
+#root[dir=ltr] .sf-search-input{text-align:left;direction:ltr;padding:0 14px 0 44px}
+.sf-search-input:focus{border-color:var(--or)}
+.sf-search-wrap{position:relative;margin-bottom:18px}
+.sf-search-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:17px;pointer-events:none}
+#root[dir=ltr] .sf-search-icon{right:auto;left:14px}
+.sf-section-title{font-size:13px;font-weight:800;color:#222;margin-bottom:10px}
+.sf-cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}
+.sf-cat-btn{padding:10px 4px 8px;border-radius:13px;border:2px solid #e5e7eb;background:#fff;cursor:pointer;font-family:'Cairo',sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;transition:.15s}
+.sf-cat-btn.active{border-color:var(--or);background:rgba(249,115,22,.07)}
+.sf-cat-btn span.ico{font-size:22px}
+.sf-cat-btn span.lbl{font-size:9px;font-weight:700;color:#555}
+.sf-cat-btn.active span.lbl{color:var(--or)}
+.sf-divider{height:1px;background:#f3f4f6;margin:14px 0}
+.sf-actions{display:flex;gap:10px;margin-top:18px}
+.sf-btn-reset{flex:1;height:48px;border-radius:14px;background:#f3f4f6;border:none;font-size:14px;font-family:'Cairo',sans-serif;cursor:pointer;color:#555;font-weight:700}
+.sf-btn-apply{flex:2;height:48px;border-radius:14px;background:var(--or);color:#fff;border:none;font-size:15px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer}
+
 /* ── FILTER PANEL ── */
 .filter-panel-back{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:800;display:none;align-items:flex-end}
 .filter-panel-back.open{display:flex}
@@ -256,16 +278,18 @@ select.form-input{appearance:none}
           <div style="font-size:10px;color:var(--muted)" id="store-count">...</div>
         </div>
         <div style="display:flex;gap:5px;align-items:center">
+          <button onclick="openSearchFilter()" id="btn-search-filter" style="position:relative;width:38px;height:38px;border-radius:10px;background:rgba(249,115,22,.1);border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">
+            🔍<span id="sf-active-badge" style="display:none;position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--or);border:2px solid #fff"></span>
+          </button>
           <button class="btn-filter" id="btn-filter-panel" onclick="openFilterPanel()">
             <span>🎯</span><span id="filter-count-badge" style="display:none" class="filter-badge">0</span>
           </button>
           <button style="width:36px;height:36px;border-radius:10px;background:rgba(249,115,22,.1);border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="locateMe()">🗺️</button>
         </div>
       </div>
-      <div class="search-wrap"><span>🔍</span>
-        <input class="search-input" id="search-input" oninput="applyFilters()">
-      </div>
-      <div class="cat-bar" id="cat-bar"></div>
+      <!-- search-input hidden — used as state sink -->
+      <input id="search-input" style="display:none">
+      <div id="cat-bar" style="display:none"></div>
     </div>
   </div>
 
@@ -527,6 +551,41 @@ select.form-input{appearance:none}
   </div>
 </div>
 
+<!-- ═══ SEARCH + FILTER SHEET ═══ -->
+<div class="modal-back" id="search-filter-sheet" onclick="e=>{if(e.target.id==='search-filter-sheet')closeSearchFilter()}">
+  <div class="sf-sheet">
+    <div class="sf-handle"><div class="sf-handle-bar"></div></div>
+
+    <!-- Search input -->
+    <div class="sf-search-wrap">
+      <span class="sf-search-icon">🔍</span>
+      <input class="sf-search-input" id="sf-search" oninput="sfLiveSearch()">
+    </div>
+
+    <!-- Category grid -->
+    <div class="sf-section-title" id="sf-cat-title">الفئات</div>
+    <div class="sf-cat-grid" id="sf-cat-grid"></div>
+
+    <div class="sf-divider"></div>
+
+    <!-- Quick toggles -->
+    <div class="toggle-row" style="border-top:none;padding-top:0">
+      <span style="font-size:13px;font-weight:700" id="sf-open-lbl">🟢 المفتوحة الآن فقط</span>
+      <button class="toggle" id="sf-open-toggle" onclick="this.classList.toggle('on')"></button>
+    </div>
+    <div class="toggle-row">
+      <span style="font-size:13px;font-weight:700" id="sf-offers-lbl">🏷️ العروض الخاصة فقط</span>
+      <button class="toggle" id="sf-offers-toggle" onclick="this.classList.toggle('on')"></button>
+    </div>
+
+    <!-- Actions -->
+    <div class="sf-actions">
+      <button class="sf-btn-reset" id="sf-btn-reset" onclick="resetSearchFilter()">إعادة ضبط</button>
+      <button class="sf-btn-apply" id="sf-btn-apply" onclick="applySearchFilter()">تطبيق</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ FILTER PANEL ═══ -->
 <div class="filter-panel-back" id="filter-panel-back">
   <div class="filter-panel">
@@ -780,6 +839,8 @@ let userLat=36.7538, userLng=3.0588, modalLat=36.7538, modalLng=3.0588;
 let currentStatusMode='manual';
 // Filter state
 let fOpenOnly=false, fRadius=0, fOffersOnly=false, fMinPrice=0, fMaxPrice=0, fDelivery=false, fCOD=false;
+// Search state
+let searchQuery='';
 // Pending image upload file
 let pendingImgFile=null;
 
@@ -890,6 +951,14 @@ function applyLang(){
   // filter panel
   $('filter-title').textContent=t.filterTitle;$('btn-reset-filters').textContent=t.resetFilters;
   $('f-open-lbl').textContent=t.openOnlyLbl;$('f-offers-lbl').textContent=t.offersOnlyLbl;
+  /* SF sheet labels */
+  if($('sf-search'))$('sf-search').placeholder=t.searchPlaceholder;
+  if($('sf-cat-title'))$('sf-cat-title').textContent=curLang==='ar'?'الفئات':'Categories';
+  if($('sf-open-lbl'))$('sf-open-lbl').textContent=t.openOnlyLbl;
+  if($('sf-offers-lbl'))$('sf-offers-lbl').textContent=t.offersOnlyLbl;
+  if($('sf-btn-reset'))$('sf-btn-reset').textContent=t.resetFilters;
+  if($('sf-btn-apply'))$('sf-btn-apply').textContent=t.applyBtn;
+  renderSFCatGrid();
   $('f-delivery-lbl').textContent=t.fDeliveryLbl;$('f-cod-lbl').textContent=t.fCODLbl;
   $('f-radius-lbl').textContent=t.radiusLbl;$('f-price-lbl').textContent=t.priceLbl;
   $('r-all').textContent=t.allRadius;
@@ -938,6 +1007,65 @@ async function uploadImageToStorage(file,storeId){
 ══════════════════════════════════════ */
 window.openFilterPanel=()=>$('filter-panel-back').classList.add('open');
 window.closeFilterPanel=()=>$('filter-panel-back').classList.remove('open');
+
+/* ══════════════════════════════════════
+   SEARCH + FILTER SHEET
+══════════════════════════════════════ */
+window.openSearchFilter=()=>{
+  $('sf-search').value=searchQuery;
+  $('sf-open-toggle').classList[fOpenOnly?'add':'remove']('on');
+  $('sf-offers-toggle').classList[fOffersOnly?'add':'remove']('on');
+  renderSFCatGrid();
+  $('search-filter-sheet').classList.add('open');
+};
+
+window.closeSearchFilter=()=>{
+  $('search-filter-sheet').classList.remove('open');
+  setTimeout(()=>map&&map.invalidateSize(),300);
+};
+
+window.applySearchFilter=()=>{
+  searchQuery=$('sf-search').value.trim();
+  fOpenOnly=$('sf-open-toggle').classList.contains('on');
+  fOffersOnly=$('sf-offers-toggle').classList.contains('on');
+  /* Active badge — shows when any filter is applied */
+  const hasActive=searchQuery||selectedCat!=='all'||fOpenOnly||fOffersOnly;
+  $('sf-active-badge').style.display=hasActive?'block':'none';
+  closeSearchFilter();
+  renderMapPins();
+};
+
+window.resetSearchFilter=()=>{
+  searchQuery='';selectedCat='all';
+  fOpenOnly=false;fOffersOnly=false;
+  $('sf-search').value='';
+  $('sf-open-toggle').classList.remove('on');
+  $('sf-offers-toggle').classList.remove('on');
+  $('sf-active-badge').style.display='none';
+  renderSFCatGrid();
+  renderMapPins();
+};
+
+/* Live search as user types — updates map without closing sheet */
+window.sfLiveSearch=()=>{
+  searchQuery=$('sf-search').value.trim();
+  renderMapPins();
+};
+
+window.setSFCat=id=>{
+  selectedCat=id;
+  renderSFCatGrid();
+  renderMapPins();
+};
+
+function renderSFCatGrid(){
+  const grid=$('sf-cat-grid');if(!grid)return;
+  grid.innerHTML=Object.entries(t.cats).map(([id,c])=>`
+    <button class="sf-cat-btn ${id===selectedCat?'active':''}" onclick="setSFCat('${id}')">
+      <span class="ico">${c.icon}</span>
+      <span class="lbl">${c.label}</span>
+    </button>`).join('');
+}
 
 window.setRadius=(km,btn)=>{
   fRadius=km;
@@ -1049,7 +1177,7 @@ window.selectCat=id=>{selectedCat=id;renderCatBar();applyFilters();};
 /* ── Store visibility (all filters) ── */
 function storeVisible(id){
   const s=allStores[id];if(!s)return false;
-  const q=$('search-input')?.value?.toLowerCase()||'';
+  const q=searchQuery.toLowerCase();
   if(q&&!s.name?.toLowerCase().includes(q)&&!(s.location?.address_name||'').toLowerCase().includes(q))return false;
   if(selectedCat!=='all'&&s.category!==selectedCat)return false;
   if(fOpenOnly&&!storeIsOpen(s))return false;
