@@ -654,7 +654,7 @@ select.form-input{appearance:none}
 import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, onValue, push, set, remove, get }
+import { getDatabase, ref, onValue, push, set, update, remove, get }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getStorage, ref as sRef, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -1115,9 +1115,9 @@ function initMap(){
   map=L.map('map',{zoomControl:false,preferCanvas:true}).setView([userLat,userLng],14);
 
   /* ── CartoDB Voyager — أقرب ثيم لـ Google Maps ── */
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
-    maxZoom:19
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> © <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+    subdomains:'abcd', maxZoom:19
   }).addTo(map);
 
   L.control.zoom({position:'bottomright'}).addTo(map);
@@ -1178,7 +1178,14 @@ window.selectCat=id=>{selectedCat=id;renderCatBar();applyFilters();};
 function storeVisible(id){
   const s=allStores[id];if(!s)return false;
   const q=searchQuery.toLowerCase();
-  if(q&&!s.name?.toLowerCase().includes(q)&&!(s.location?.address_name||'').toLowerCase().includes(q))return false;
+  if(q){
+    /* البحث في اسم المحل والعنوان */
+    const nameMatch=s.name?.toLowerCase().includes(q)||
+                    (s.location?.address_name||'').toLowerCase().includes(q);
+    /* البحث العميق في أسماء المنتجات (product_names index) */
+    const prodMatch=(s.product_names||[]).some(pn=>pn.toLowerCase().includes(q));
+    if(!nameMatch&&!prodMatch)return false;
+  }
   if(selectedCat!=='all'&&s.category!==selectedCat)return false;
   if(fOpenOnly&&!storeIsOpen(s))return false;
   if(fRadius>0&&s.location?.lat&&s.location?.lng){
@@ -1514,7 +1521,7 @@ window.openStoreModal=(editId=null)=>{
   setTimeout(()=>{
     if(modalMap){modalMap.remove();modalMap=null;}
     modalMap=L.map('modal-map').setView([modalLat,modalLng],16);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(modalMap);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19}).addTo(modalMap);
     const pinIcon=L.divIcon({className:'',html:`<div style="width:28px;height:28px;border-radius:50%;background:var(--or);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:grab"></div>`,iconSize:[28,28],iconAnchor:[14,14]});
     modalMarker=L.marker([modalLat,modalLng],{draggable:true,icon:pinIcon}).addTo(modalMap);
     modalMarker.on('dragend',e=>{const ll=e.target.getLatLng();modalLat=ll.lat;modalLng=ll.lng;});
@@ -1628,7 +1635,11 @@ window.saveProduct=async()=>{
     closeModal('product-modal');
     toast(editingProductId?t.prodUpdated:t.prodAdded);
     const snap=await get(ref(db,`products/${selectedSellerStoreId}`));
-    renderInventory(selectedSellerStoreId,snap.val()||{});
+    const allProds=snap.val()||{};
+    renderInventory(selectedSellerStoreId,allProds);
+    /* تحديث فهرس البحث العميق product_names في وثيقة المحل */
+    const names=Object.values(allProds).map(p=>p.name).filter(Boolean);
+    await update(ref(db,`stores/${selectedSellerStoreId}`),{product_names:names});
     pendingImgFile=null;
   }catch(e){toast(t.saveErr+(e.code||e.message));}
   finally{btn.disabled=false;btn.textContent=t.saveProd;}
@@ -1641,7 +1652,11 @@ window.deleteProduct=async(storeId,prodId)=>{
     await remove(ref(db,`products/${storeId}/${prodId}`));
     toast(t.deleted);
     const snap=await get(ref(db,`products/${storeId}`));
-    renderInventory(storeId,snap.val()||{});
+    const allProds=snap.val()||{};
+    renderInventory(storeId,allProds);
+    /* تحديث فهرس البحث العميق بعد الحذف */
+    const names=Object.values(allProds).map(p=>p.name).filter(Boolean);
+    await update(ref(db,`stores/${storeId}`),{product_names:names});
   }catch(e){toast(t.saveErr+e.message);}
 };
 
