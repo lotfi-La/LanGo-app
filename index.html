@@ -234,6 +234,12 @@ select.form-input{appearance:none}
 .delivery-badge.ship{background:#dbeafe;color:#1d4ed8}
 .delivery-badge.cod{background:#dcfce7;color:#15803d}
 
+/* ── STORE COVER BANNER ── */
+.cover-banner{width:calc(100% + 32px);margin:-12px -16px 14px;height:150px;overflow:hidden;position:relative;border-radius:0}
+.cover-banner img{width:100%;height:100%;object-fit:cover;display:block}
+.cover-banner-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 30%,rgba(0,0,0,.55) 100%)}
+.cover-upload-preview{width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:8px;display:none;border:2px solid rgba(249,115,22,.3)}
+
 /* ── NAVIGATION HUD ── */
 .nav-hud{position:fixed;bottom:0;left:0;right:0;z-index:450;padding:0 12px 28px;pointer-events:none;animation:slideUpIn .35s ease}
 @keyframes slideUpIn{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -432,6 +438,15 @@ select.form-input{appearance:none}
 <div class="modal-back" id="store-modal">
   <div class="modal">
     <div style="font-size:16px;font-weight:800;text-align:center;margin-bottom:16px" id="store-modal-ttl">إضافة محل</div>
+
+    <!-- Cover Image -->
+    <label class="form-label" id="lbl-s-cover">🖼️ صورة غلاف المحل (اختياري)</label>
+    <div class="img-upload-wrap" id="cover-upload-area" style="margin-bottom:6px">
+      <input type="file" id="s-cover-file" accept="image/*" onchange="previewCover(this)">
+      <div style="font-size:26px;margin-bottom:5px" id="cover-upload-icon">🖼️</div>
+      <div style="font-size:12px;color:var(--muted)" id="cover-upload-hint">اضغط لاختيار صورة الغلاف</div>
+    </div>
+    <img id="cover-preview" class="cover-upload-preview">
     <label class="form-label" id="lbl-s-name">اسم المحل *</label>
     <input class="form-input" id="s-name">
     <label class="form-label" id="lbl-s-addr">العنوان</label>
@@ -875,6 +890,7 @@ let navRouteCoords=[], navTargetStore=null;
 let navLastUpdate=0;
 // Pending image upload file
 let pendingImgFile=null;
+let pendingCoverFile=null;
 
 /* ══════════════════════════════════════
    UTILS
@@ -1027,11 +1043,54 @@ window.previewImage=input=>{
   reader.readAsDataURL(file);
 };
 
-async function uploadImageToStorage(file,storeId){
-  const path=`products/${storeId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g,'_')}`;
-  const sr=sRef(storage,path);
-  await uploadBytes(sr,file);
-  return await getDownloadURL(sr);
+window.previewCover=input=>{
+  const file=input.files[0];if(!file)return;
+  pendingCoverFile=file;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=$('cover-preview');
+    img.src=e.target.result;img.style.display='block';
+    $('cover-upload-icon').style.display='none';
+    $('cover-upload-hint').textContent=file.name;
+  };
+  reader.readAsDataURL(file);
+};
+
+/* ── ضغط الصورة قبل الرفع (Canvas) ── */
+async function compressImage(file,maxDim=900,quality=0.82){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let {width,height}=img;
+      if(width>maxDim||height>maxDim){
+        if(width>height){height=Math.round(height*maxDim/width);width=maxDim;}
+        else{width=Math.round(width*maxDim/height);height=maxDim;}
+      }
+      const canvas=document.createElement('canvas');
+      canvas.width=width;canvas.height=height;
+      canvas.getContext('2d').drawImage(img,0,0,width,height);
+      canvas.toBlob(blob=>{
+        if(!blob){reject(new Error('compress failed'));return;}
+        resolve(new File([blob],file.name.replace(/\.[^.]+$/,'.jpg'),{type:'image/jpeg'}));
+      },'image/jpeg',quality);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('load failed'));};
+    img.src=url;
+  });
+}
+
+/* ── رفع الصورة مع timeout 30 ثانية ── */
+async function uploadImageToStorage(file,storagePath){
+  /* ضغط أولاً */
+  let uploadFile=file;
+  try{uploadFile=await compressImage(file);}
+  catch(e){console.warn('[IMG] compress skipped:',e.message);}
+  const sr=sRef(storage,storagePath);
+  const uploadPromise=uploadBytes(sr,uploadFile).then(()=>getDownloadURL(sr));
+  const timeoutPromise=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),30000));
+  return await Promise.race([uploadPromise,timeoutPromise]);
 }
 
 /* ══════════════════════════════════════
@@ -1274,6 +1333,12 @@ window.openDrawer=storeId=>{
   $('d-offers-toggle-btn').style.background='#fff';$('d-offers-toggle-btn').style.color='#555';
   const sl=storeStatusLabel(s);
   $('drawer-header').innerHTML=`
+    ${s.cover_image_url?`
+    <div class="cover-banner">
+      <img src="${s.cover_image_url}" alt="${s.name}" onerror="this.parentElement.style.display='none'">
+      <div class="cover-banner-overlay"></div>
+      <div style="position:absolute;bottom:10px;right:14px;color:#fff;font-size:13px;font-weight:800;text-shadow:0 1px 4px rgba(0,0,0,.5)">${s.name}</div>
+    </div>`:''}
     <div style="display:flex;align-items:flex-start;gap:12px">
       <div style="width:48px;height:48px;border-radius:14px;background:rgba(249,115,22,.1);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🏪</div>
       <div style="flex:1;min-width:0">
@@ -1551,6 +1616,18 @@ window.openStoreModal=(editId=null)=>{
     modalLat=userLat;modalLng=userLng;
   }
   $('store-modal').classList.add('open');
+  /* إعادة ضبط الغلاف */
+  pendingCoverFile=null;$('s-cover-file').value='';
+  const cp=$('cover-preview');
+  if(editingStoreId&&allStores[editingStoreId]?.cover_image_url){
+    cp.src=allStores[editingStoreId].cover_image_url;cp.style.display='block';
+    $('cover-upload-icon').style.display='none';
+    $('cover-upload-hint').textContent=curLang==='ar'?'صورة حالية':'Current cover';
+  }else{
+    cp.style.display='none';cp.src='';
+    $('cover-upload-icon').style.display='block';
+    $('cover-upload-hint').textContent=curLang==='ar'?'اضغط لاختيار صورة الغلاف':'Tap to choose cover image';
+  }
   setTimeout(()=>{
     if(modalMap){modalMap.remove();modalMap=null;}
     modalMap=L.map('modal-map').setView([modalLat,modalLng],16);
@@ -1568,6 +1645,16 @@ window.saveStore=async()=>{
   if(!name){toast(t.errStore);return;}
   if(editingStoreId&&allStores[editingStoreId]?.owner!==currentUser?.uid){toast(t.noPermEdit);return;}
   const btn=$('btn-save-store');btn.disabled=true;btn.textContent=t.saving;
+
+  /* رفع صورة الغلاف إن وُجدت */
+  let coverUrl=editingStoreId?allStores[editingStoreId]?.cover_image_url||null:null;
+  if(pendingCoverFile){
+    try{
+      toast(t.uploadingImg,8000);
+      coverUrl=await uploadImageToStorage(pendingCoverFile,`stores/${Date.now()}_cover.jpg`);
+    }catch(e){console.warn('[COVER]',e.message);}
+  }
+
   const storeData={name,category:$('s-cat').value,
     status_mode:currentStatusMode,
     is_open:currentStatusMode==='manual'?$('s-open-toggle').classList.contains('on'):currentStatusMode==='24h'?true:storeIsOpen({status_mode:'auto',opening_time:$('s-open-time').value,closing_time:$('s-close-time').value}),
@@ -1576,6 +1663,7 @@ window.saveStore=async()=>{
     phone:$('s-phone').value.trim(),whatsapp:$('s-wa').value.trim(),
     has_delivery:$('s-delivery-toggle').classList.contains('on'),
     cod:$('s-cod-toggle').classList.contains('on'),
+    cover_image_url:coverUrl,
     location:{address_name:$('s-addr').value.trim(),lat:modalLat,lng:modalLng},
     owner:currentUser.uid,updated_at:Date.now()};
   if(!editingStoreId)storeData.created_at=Date.now();
@@ -1585,6 +1673,7 @@ window.saveStore=async()=>{
     await set(ref(db,`stores/${sid}`),storeData);
     await set(ref(db,`sellers/${currentUser.uid}/stores/${sid}`),true);
     closeModal('store-modal');selectedSellerStoreId=sid;
+    pendingCoverFile=null;
     toast(editingStoreId?t.storeUpdated:t.storeAdded);
   }catch(e){toast(t.saveErr+(e.code||e.message));}
   finally{btn.disabled=false;btn.textContent=t.saveStore;}
@@ -1645,12 +1734,13 @@ window.saveProduct=async()=>{
   // Upload image if selected
   if(pendingImgFile){
     try{
-      toast(t.uploadingImg,5000);
-      imageUrl=await uploadImageToStorage(pendingImgFile,selectedSellerStoreId);
+      toast(t.uploadingImg,8000);
+      const path=`products/${selectedSellerStoreId}/${Date.now()}.jpg`;
+      imageUrl=await uploadImageToStorage(pendingImgFile,path);
       toast(t.uploadOk);
     }catch(e){
       toast(t.uploadFail+' — '+e.message);
-      // Proceed without image
+      /* يكمل الحفظ بدون صورة بدل ما يتعلق */
     }
   }
 
