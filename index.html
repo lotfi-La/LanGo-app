@@ -702,8 +702,6 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, si
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase, ref, onValue, push, set, update, remove, get }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const fbApp = initializeApp({
   apiKey:"AIzaSyA6TCWg18L9wnfoo95xuekqMX4dSUeU0Jk",
@@ -714,9 +712,8 @@ const fbApp = initializeApp({
   messagingSenderId:"486176221410",
   appId:"1:486176221410:web:8429c9967ef2fd1c05d6bb"
 });
-const auth    = getAuth(fbApp);
-const db      = getDatabase(fbApp);
-const storage = getStorage(fbApp);
+const auth = getAuth(fbApp);
+const db   = getDatabase(fbApp);
 
 /* ══════════════════════════════════════
    TRANSLATIONS
@@ -1059,75 +1056,82 @@ window.previewCover=input=>{
   reader.readAsDataURL(file);
 };
 
-/* ── معاينة رابط الصورة الخارجي مع كشف Pinterest ── */
+/* ── معاينة رابط الصورة الخارجي (بسيطة بدون قيود) ── */
 window.previewUrlImage=input=>{
   const url=(input.value||'').trim();
   const preview=$('img-preview');
-  if(!url){preview.style.display='none';$('img-upload-icon').style.display='block';return;}
-
-  /* تحذير روابط Pinterest الصفحات (وليست CDN) */
-  if(url.includes('pinterest.com')&&!url.includes('pinimg.com')){
-    toast('⚠️ رابط Pinterest لا يعمل كصورة — استخدم رابط pinimg.com المباشر',4000);
-    preview.style.display='none';return;
-  }
-  /* تحذير عام للروابط غير المباشرة */
-  const isDirectImg=/\.(jpg|jpeg|png|webp|gif|avif|svg)(\?.*)?$/i.test(url);
-  if(!isDirectImg){
-    toast('⚠️ الرابط قد لا يكون صورة مباشرة',3000);
-  }
-  /* معاينة مع fallback */
-  preview.onerror=()=>{
+  if(!url){
     preview.style.display='none';
     $('img-upload-icon').style.display='block';
-    $('img-upload-icon').textContent='❌';
-    $('img-upload-hint').textContent=curLang==='ar'?'فشل تحميل الصورة':'Failed to load image';
-    toast('❌ '+(curLang==='ar'?'لا يمكن تحميل الصورة من هذا الرابط':'Cannot load image from this URL'),3000);
-  };
-  preview.onload=()=>{
-    $('img-upload-icon').style.display='none';
-    $('img-upload-hint').textContent=curLang==='ar'?'✅ تم تحميل الصورة':'✅ Image loaded';
-    /* مسح الملف المنتظر لأن الرابط له الأولوية */
-    pendingImgFile=null;$('p-img-file').value='';
-  };
+    $('img-upload-hint').textContent=t.uploadHint;
+    return;
+  }
+  pendingImgFile=null; /* الرابط له الأولوية على الملف */
+  $('p-img-file').value='';
+  preview.onerror=null;
   preview.src=url;
   preview.style.display='block';
+  preview.onerror=()=>{
+    preview.onerror=null;
+    preview.src='https://placehold.co/150?text=No+Image';
+    $('img-upload-hint').textContent=curLang==='ar'?'⚠️ تعذّر تحميل الصورة':'⚠️ Could not load image';
+  };
 };
 
-/* ── ضغط الصورة قبل الرفع (Canvas) ── */
+/* ══════════════════════════════════════
+   IMAGE UPLOAD — ImgBB API
+══════════════════════════════════════ */
+const IMGBB_KEY='d6263b821a36173a0058b725c8328ff9';
+
+/* ── ضغط الصورة بالكانفاس ── */
 async function compressImage(file,maxDim=900,quality=0.82){
-  return new Promise((resolve,reject)=>{
+  return new Promise((res,rej)=>{
     const img=new Image();
     const url=URL.createObjectURL(file);
     img.onload=()=>{
       URL.revokeObjectURL(url);
-      let {width,height}=img;
+      let{width,height}=img;
       if(width>maxDim||height>maxDim){
         if(width>height){height=Math.round(height*maxDim/width);width=maxDim;}
         else{width=Math.round(width*maxDim/height);height=maxDim;}
       }
-      const canvas=document.createElement('canvas');
-      canvas.width=width;canvas.height=height;
-      canvas.getContext('2d').drawImage(img,0,0,width,height);
-      canvas.toBlob(blob=>{
-        if(!blob){reject(new Error('compress failed'));return;}
-        resolve(new File([blob],file.name.replace(/\.[^.]+$/,'.jpg'),{type:'image/jpeg'}));
+      const c=document.createElement('canvas');
+      c.width=width;c.height=height;
+      c.getContext('2d').drawImage(img,0,0,width,height);
+      c.toBlob(blob=>{
+        if(!blob){rej(new Error('compress failed'));return;}
+        res(new File([blob],file.name.replace(/\.[^.]+$/,'.jpg'),{type:'image/jpeg'}));
       },'image/jpeg',quality);
     };
-    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('load failed'));};
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('load failed'));};
     img.src=url;
   });
 }
 
-/* ── رفع الصورة مع timeout 30 ثانية ── */
-async function uploadImageToStorage(file,storagePath){
-  /* ضغط أولاً */
+async function uploadToImgBB(file){
+  /* 1. ضغط الصورة أولاً */
   let uploadFile=file;
-  try{uploadFile=await compressImage(file);}
-  catch(e){console.warn('[IMG] compress skipped:',e.message);}
-  const sr=sRef(storage,storagePath);
-  const uploadPromise=uploadBytes(sr,uploadFile).then(()=>getDownloadURL(sr));
-  const timeoutPromise=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),30000));
-  return await Promise.race([uploadPromise,timeoutPromise]);
+  try{uploadFile=await compressImage(file,900,0.82);}
+  catch(e){console.warn('[COMPRESS]',e.message);}
+
+  /* 2. تحويل لـ Base64 */
+  const b64=await new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=()=>res(reader.result.split(',')[1]);
+    reader.onerror=rej;
+    reader.readAsDataURL(uploadFile);
+  });
+
+  /* 3. رفع على ImgBB */
+  const form=new FormData();
+  form.append('image',b64);
+  form.append('name',uploadFile.name||'product');
+
+  const res=await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`,{method:'POST',body:form});
+  if(!res.ok) throw new Error('ImgBB HTTP '+res.status);
+  const data=await res.json();
+  if(!data.success) throw new Error(data.error?.message||'ImgBB failed');
+  return data.data.url; /* رابط دائم */
 }
 
 /* ══════════════════════════════════════
@@ -1372,7 +1376,7 @@ window.openDrawer=storeId=>{
   $('drawer-header').innerHTML=`
     ${s.cover_image_url?`
     <div class="cover-banner">
-      <img src="${s.cover_image_url}" alt="${s.name}" onerror="this.parentElement.style.display='none'">
+      <img src="${s.cover_image_url}" alt="${s.name}" onerror="this.onerror=null;this.src='https://placehold.co/150?text=📷'">
       <div class="cover-banner-overlay"></div>
       <div style="position:absolute;bottom:10px;right:14px;color:#fff;font-size:13px;font-weight:800;text-shadow:0 1px 4px rgba(0,0,0,.5)">${s.name}</div>
     </div>`:''}
@@ -1462,7 +1466,7 @@ function prodCardHTML(p){
   const emoji=CE(p.category);
   const imgH=p.image_url
     ?`<img src="${p.image_url}" style="width:100%;height:100%;object-fit:cover;border-radius:10px"
-       onerror="this.style.display='none';if(!this.parentElement.querySelector('span.fbk')){var sp=document.createElement('span');sp.className='fbk';sp.style.fontSize='26px';sp.textContent='${emoji}';this.parentElement.appendChild(sp)}">`
+       onerror="this.onerror=null;this.src='https://placehold.co/150?text=📷'">`
     :emoji;
   const store=allStores[drawerStoreId];
   return `<button class="prod-card" onclick="openProdDetail('${drawerStoreId}','${p.id}')">
@@ -1490,7 +1494,7 @@ window.openProdDetail=async(storeId,prodId)=>{
   const price=hasOffer?p.offer_price:p.price;
 
   $('prod-detail-img-wrap').innerHTML=p.image_url
-    ?`<img class="prod-detail-img" src="${p.image_url}" onerror="this.parentElement.innerHTML='<div class=\\'prod-detail-img-placeholder\\'>${CE(p.category)}</div>'">`
+    ?`<img class="prod-detail-img" src="${p.image_url}" onerror="this.onerror=null;this.src='https://placehold.co/150?text=📷'">`
     :`<div class="prod-detail-img-placeholder">${CE(p.category)}</div>`;
 
   $('pd-name').textContent=p.name;
@@ -1614,7 +1618,7 @@ function renderInventory(storeId,products){
     const ej=CE(p.category);
     const imgH=p.image_url
       ?`<img src="${p.image_url}" style="width:100%;height:100%;object-fit:cover;border-radius:10px"
-         onerror="this.style.display='none';if(!this.parentElement.querySelector('span.fbk')){var sp=document.createElement('span');sp.className='fbk';sp.style.fontSize='18px';sp.textContent='${ej}';this.parentElement.appendChild(sp)}">`
+         onerror="this.onerror=null;this.src='https://placehold.co/150?text=📷'">`
       :ej;
     return`<div class="inv-item">
       <div class="inv-thumb">${imgH}</div>
@@ -1695,9 +1699,12 @@ window.saveStore=async()=>{
   let coverUrl=editingStoreId?allStores[editingStoreId]?.cover_image_url||null:null;
   if(pendingCoverFile){
     try{
-      toast(t.uploadingImg,8000);
-      coverUrl=await uploadImageToStorage(pendingCoverFile,`stores/${Date.now()}_cover.jpg`);
-    }catch(e){console.warn('[COVER]',e.message);}
+      toast(curLang==='ar'?'⏳ جاري رفع صورة الغلاف...':'⏳ Uploading cover...',10000);
+      coverUrl=await uploadToImgBB(pendingCoverFile);
+    }catch(e){
+      console.error('[IMGBB COVER]',e);
+      toast((curLang==='ar'?'⚠️ فشل رفع الغلاف: ':'⚠️ Cover upload failed: ')+e.message);
+    }
   }
 
   const storeData={name,category:$('s-cat').value,
@@ -1754,13 +1761,19 @@ window.editProduct=async(storeId,prodId)=>{
     $('p-name').value=p.name||'';$('p-price').value=p.price||'';
     $('p-offer').value=p.offer_price||'';$('p-desc').value=p.description||'';
     $('p-img-url').value=p.image_url||'';
-    /* معاينة الصورة الحالية */
+    /* معاينة الصورة الموجودة بدون triggers */
+    const prev=$('img-preview');
     if(p.image_url){
-      const prev=$('img-preview');
-      prev.src=p.image_url;prev.style.display='block';
-      prev.onerror=()=>{prev.style.display='none';$('img-upload-icon').style.display='block';};
+      prev.onerror=null;
+      prev.src=p.image_url;
+      prev.style.display='block';
+      prev.onerror=()=>{prev.onerror=null;prev.src='https://placehold.co/150?text=No+Image';};
       $('img-upload-icon').style.display='none';
-      $('img-upload-hint').textContent=curLang==='ar'?'صورة محفوظة — اختر صورة جديدة للتغيير':'Saved image — pick new to change';
+      $('img-upload-hint').textContent=curLang==='ar'?'صورة محفوظة — اختر ملفاً جديداً للتغيير':'Saved image — pick a new file to change';
+    }else{
+      prev.style.display='none';prev.src='';
+      $('img-upload-icon').style.display='block';
+      $('img-upload-hint').textContent=t.uploadHint;
     }
     $('p-cat').value=p.category||'food';
     $('p-avail-toggle').classList[p.in_stock?'add':'remove']('on');
@@ -1782,21 +1795,19 @@ window.saveProduct=async()=>{
   if(!hidePrice&&(isNaN(price)||price<=0)){toast(t.errPriceZero);return;}
   const btn=$('btn-save-prod');btn.disabled=true;btn.textContent=t.saving;
 
-  /* ── capture محلي فوري لمنع race condition ── */
   const capturedFile=pendingImgFile;
   const typedUrl=$('p-img-url').value.trim()||null;
   let imageUrl=typedUrl;
 
   if(capturedFile){
     try{
-      toast(t.uploadingImg,10000);
-      const path=`products/${selectedSellerStoreId}/${Date.now()}.jpg`;
-      imageUrl=await uploadImageToStorage(capturedFile,path);
-      toast(t.uploadOk);
+      toast(curLang==='ar'?'⏳ جاري رفع الصورة...':'⏳ Uploading image...',10000);
+      imageUrl=await uploadToImgBB(capturedFile);
+      toast(curLang==='ar'?'✅ تم رفع الصورة':'✅ Image uploaded');
     }catch(e){
-      console.error('[IMG UPLOAD]',e);
-      toast(t.uploadFail+' — '+e.message);
-      imageUrl=typedUrl; /* fallback للرابط المكتوب */
+      console.error('[IMGBB PRODUCT]',e);
+      toast((curLang==='ar'?'❌ فشل رفع الصورة: ':'❌ Upload failed: ')+e.message);
+      imageUrl=typedUrl;
     }
   }
 
