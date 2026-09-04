@@ -1629,25 +1629,45 @@ window.openDrawer=storeId=>{
       ${s.location?.lat?`<button class="btn-nav" onclick="startNavigation('${storeId}')">🧭 ${curLang==='ar'?'التوجه إليه':'Navigate'}</button>`:''}
     </div>`;
   $('d-total').textContent='–';$('d-avail').textContent='–';
-  $('d-products').innerHTML=`<div class="skel-card"><div class="skel-thumb skeleton"></div><div style="flex:1"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div><div class="skel-line xshort skeleton"></div></div></div><div class="skel-card"><div class="skel-thumb skeleton"></div><div style="flex:1"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div></div></div><div class="skel-card"><div class="skel-thumb skeleton"></div><div style="flex:1"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div></div></div>`;
+  $('d-products').innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">${t.loadingProds}</div>`;
   $('d-cats').innerHTML='';
-  $('drawer-back').classList.add('open');$('store-drawer').classList.add('open');
+
+  /* فتح الدرج أولاً */
+  $('drawer-back').classList.add('open');
+  $('store-drawer').classList.add('open');
   renderMapPins();
-  get(ref(db,`products/${storeId}`))
+
+  /* ── إذا بدون إنترنت → كاش فوراً ── */
+  if(!navigator.onLine){
+    const cached=loadFromCache();
+    if(cached?.products?.[storeId]){
+      drawerProducts=cached.products[storeId];
+      renderDrawerProducts();
+      toast(curLang==='ar'?'📵 بيانات محفوظة مسبقاً':'📵 Showing cached data',2500);
+    }else{
+      $('d-products').innerHTML=`<div class="empty"><div style="font-size:40px;margin-bottom:8px">📵</div><div style="font-size:13px;font-weight:600">${curLang==='ar'?'لا إنترنت ولا بيانات محفوظة لهذا المحل':'No internet & no cached data for this store'}</div></div>`;
+    }
+    return;
+  }
+
+  /* ── متصل → Firebase مع timeout 6 ثوانٍ ── */
+  const fetchPromise=get(ref(db,`products/${storeId}`));
+  const timeoutPromise=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000));
+
+  Promise.race([fetchPromise,timeoutPromise])
     .then(snap=>{
       drawerProducts=snap.val()||{};
-      saveProdToCache(storeId,drawerProducts); /* كاش تلقائي */
+      saveProdToCache(storeId,drawerProducts);
       renderDrawerProducts();
     })
     .catch(()=>{
-      /* إذا Firebase فشل → جرّب الكاش */
       const cached=loadFromCache();
       if(cached?.products?.[storeId]){
         drawerProducts=cached.products[storeId];
         renderDrawerProducts();
         toast(curLang==='ar'?'📵 بيانات محفوظة مسبقاً':'📵 Showing cached data',2500);
       }else{
-        $('d-products').innerHTML=`<div class="empty"><div style="font-size:44px;margin-bottom:8px">❌</div><div style="font-size:14px;font-weight:600">${t.loadErr}</div></div>`;
+        $('d-products').innerHTML=`<div class="empty"><div style="font-size:40px;margin-bottom:8px">❌</div><div style="font-size:13px;font-weight:600">${t.loadErr}</div></div>`;
       }
     });
 };
