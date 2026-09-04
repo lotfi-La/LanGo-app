@@ -2138,7 +2138,19 @@ window.saveProduct=async()=>{
     const snap=await get(ref(db,`products/${selectedSellerStoreId}`));
     const allProds=snap.val()||{};
     renderInventory(selectedSellerStoreId,allProds);
-    /* تحديث فهرس البحث العميق product_names في وثيقة المحل */
+    /* ── تحديث فهرس الباركود في Firebase ── */
+    const savedBarcode=$('p-name').dataset.barcode;
+    if(savedBarcode&&savedBarcode.length>4){
+      try{
+        await set(ref(db,`barcode_index/${savedBarcode}`),{
+          name:prodData.name,
+          image_url:imageUrl||null,
+          brand:null,
+          updated_at:Date.now()
+        });
+      }catch(e){console.warn('[BARCODE INDEX]',e);}
+    }
+    /* ── تحديث فهرس أسماء المنتجات ── */
     const names=Object.values(allProds).map(p=>p.name).filter(Boolean);
     await update(ref(db,`stores/${selectedSellerStoreId}`),{product_names:names});
     pendingImgFile=null;
@@ -2225,39 +2237,55 @@ window.lookupManualBarcode=()=>{
 async function lookupBarcode(barcode){
   toast(curLang==='ar'?`⏳ جاري البحث عن: ${barcode}`:`⏳ Looking up: ${barcode}`,6000);
 
-  let productName='', productImage='', productBrand='';
+  let name='', image='', brand='', fromLocal=false;
 
+  /* ── 1. Firebase barcode_index أولاً (أسرع + أدق) ── */
   try{
-    /* Open Food Facts API — مجاني بدون مفتاح */
-    const res=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
-    const data=await res.json();
-
-    if(data.status===1&&data.product){
-      const p=data.product;
-      productName = p.product_name_ar||p.product_name_en||p.product_name||p.generic_name_ar||p.generic_name||'';
-      productBrand= p.brands||'';
-      productImage= p.image_front_url||p.image_url||'';
-      if(productBrand&&productName&&!productName.includes(productBrand))
-        productName=`${productName} — ${productBrand}`;
+    const snap=await get(ref(db,`barcode_index/${barcode}`));
+    if(snap.exists()){
+      const d=snap.val();
+      name=d.name||''; image=d.image_url||''; brand=d.brand||'';
+      fromLocal=true;
     }
-  }catch(e){console.warn('[OPENFOODFACTS]',e);}
+  }catch(e){console.warn('[BARCODE LOCAL]',e);}
 
-  /* فتح مودال المنتج مع البيانات */
+  /* ── 2. Open Food Facts إن لم يُوجد محلياً ── */
+  if(!fromLocal){
+    try{
+      const res=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+      const data=await res.json();
+      if(data.status===1&&data.product){
+        const p=data.product;
+        name = p.product_name_ar||p.product_name_en||p.product_name||p.generic_name_ar||p.generic_name||'';
+        brand= p.brands||'';
+        /* صورة أعلى جودة ممكنة */
+        image= p.image_front_url||p.image_url||'';
+        /* إزالة مؤشرات الصور المصغرة */
+        if(image) image=image.replace(/\.(200|small|thumb)\./g,'.400.').replace(/_small\./,'.');
+      }
+    }catch(e){console.warn('[OPENFOODFACTS]',e);}
+  }
+
+  _fillFromBarcode(barcode,name,image,brand,fromLocal);
+}
+
+function _fillFromBarcode(barcode,name,image,brand,fromLocal){
   openProductModal();
   setTimeout(()=>{
-    if(productName){
-      $('p-name').value=productName;
-      toast(`✅ ${curLang==='ar'?'وُجد المنتج':'Product found'}: ${productName}`,3000);
-    }else{
-      toast(curLang==='ar'?`⚠️ الباركود ${barcode} غير موجود في القاعدة — أكمل يدوياً`:`⚠️ Barcode ${barcode} not found — fill manually`,4000);
-    }
-    if(productImage){
-      $('p-img-url').value=productImage;
-      previewUrlImage($('p-img-url'));
-    }
-    /* حفظ الباركود لاحقاً مع المنتج */
+    const displayName=name&&brand&&!name.includes(brand)?`${name} — ${brand}`:name;
+    $('p-name').value=displayName;
     $('p-name').dataset.barcode=barcode;
-    /* التركيز على حقل السعر مباشرة */
+
+    if(image){$('p-img-url').value=image;previewUrlImage($('p-img-url'));}
+
+    if(displayName){
+      const src=fromLocal
+        ?(curLang==='ar'?'⚡ من قاعدتنا: ':'⚡ From our DB: ')
+        :(curLang==='ar'?'✅ وُجد: ':'✅ Found: ');
+      toast(src+displayName,3500);
+    }else{
+      toast(curLang==='ar'?`⚠️ الباركود ${barcode} — أكمل يدوياً`:`⚠️ Barcode ${barcode} — fill manually`,4000);
+    }
     setTimeout(()=>$('p-price').focus(),400);
   },350);
 }
