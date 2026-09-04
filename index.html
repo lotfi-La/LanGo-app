@@ -8,6 +8,7 @@
 <title>LanGo</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--or:#f97316;--bl:#3b82f6;--gr:#22c55e;--re:#ef4444;--border:#f3e8d8;--muted:#6b7280}
@@ -303,6 +304,30 @@ select.form-input{appearance:none}
 .delivery-badge.ship{background:#dbeafe;color:#1d4ed8}
 .delivery-badge.cod{background:#dcfce7;color:#15803d}
 
+/* ── BARCODE SCANNER ── */
+.barcode-modal{position:fixed;inset:0;background:#000;z-index:1200;display:none;flex-direction:column;align-items:center;justify-content:center}
+.barcode-modal.open{display:flex}
+#barcode-reader{width:100%;max-width:420px}
+#barcode-reader video{border-radius:0}
+.barcode-overlay{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.barcode-frame{width:240px;height:160px;position:relative}
+.barcode-frame::before{content:'';position:absolute;inset:0;box-shadow:0 0 0 9999px rgba(0,0,0,.55);border-radius:12px}
+.barcode-corner{position:absolute;width:24px;height:24px;border-color:#f97316;border-style:solid}
+.bc-tl{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.bc-tr{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+.bc-bl{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+.bc-br{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+.barcode-line{position:absolute;left:4px;right:4px;height:2px;background:var(--or);opacity:.8;animation:scanLine 1.8s ease-in-out infinite}
+@keyframes scanLine{0%,100%{top:8px}50%{top:calc(100% - 10px)}}
+.barcode-hint{position:absolute;bottom:130px;left:0;right:0;text-align:center;color:rgba(255,255,255,.8);font-size:13px;font-family:'Cairo',sans-serif;font-weight:600}
+.barcode-manual{position:absolute;bottom:60px;left:16px;right:16px;display:flex;gap:8px}
+.barcode-manual input{flex:1;height:44px;border-radius:12px;border:none;padding:0 14px;font-size:14px;font-family:'Cairo',sans-serif;text-align:center;background:rgba(255,255,255,.15);color:#fff}
+.barcode-manual input::placeholder{color:rgba(255,255,255,.5)}
+.barcode-manual button{height:44px;border-radius:12px;background:var(--or);border:none;color:#fff;padding:0 18px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer;font-size:13px}
+.barcode-close{position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.barcode-status{position:absolute;top:20px;left:0;right:0;text-align:center;color:#fff;font-size:14px;font-family:'Cairo',sans-serif;font-weight:700;pointer-events:none}
+.btn-scan{background:rgba(249,115,22,.15);border:1.5px solid rgba(249,115,22,.4);color:var(--or);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px}
+
 /* ── OFFLINE BANNER ── */
 .offline-banner{
   position:absolute;left:0;right:0;z-index:399;padding:0 10px;
@@ -509,7 +534,10 @@ select.form-input{appearance:none}
           <div style="font-size:14px;font-weight:800" id="inv-ttl"></div>
           <div style="font-size:11px;color:var(--muted)" id="inv-sub"></div>
         </div>
-        <button class="btn-add" id="btn-add-prod" onclick="openProductModal()">+ منتج</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn-scan" id="btn-scan-barcode" onclick="openBarcodeScanner()">📷 باركود</button>
+          <button class="btn-add" id="btn-add-prod" onclick="openProductModal()">+ منتج</button>
+        </div>
       </div>
       <div class="inv-list" id="inv-list"><div class="skel-inv"><div class="skel-inv-thumb skeleton"></div><div style="flex:1"><div class="skel-line skeleton"></div><div class="skel-line xshort skeleton"></div></div></div><div class="skel-inv"><div class="skel-inv-thumb skeleton"></div><div style="flex:1"><div class="skel-line skeleton"></div><div class="skel-line xshort skeleton"></div></div></div></div>
     </div>
@@ -788,6 +816,27 @@ select.form-input{appearance:none}
       <button onclick="closeFilterPanel()" style="flex:1;height:48px;border-radius:14px;background:#f3f4f6;border:none;font-size:14px;font-family:'Cairo',sans-serif;cursor:pointer;color:#555;font-weight:700" id="btn-cancel-filter">إلغاء</button>
       <button onclick="applyAdvancedFilters(true)" style="flex:1;height:48px;border-radius:14px;background:var(--or);color:#fff;border:none;font-size:14px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer" id="btn-apply-filter">تطبيق</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ BARCODE SCANNER MODAL ═══ -->
+<div class="barcode-modal" id="barcode-modal">
+  <div class="barcode-status" id="barcode-status">📷 وجّه الكاميرا نحو الباركود</div>
+  <button class="barcode-close" onclick="closeBarcodeScanner()">✕</button>
+  <div id="barcode-reader"></div>
+  <div class="barcode-overlay">
+    <div class="barcode-frame">
+      <div class="barcode-corner bc-tl"></div>
+      <div class="barcode-corner bc-tr"></div>
+      <div class="barcode-corner bc-bl"></div>
+      <div class="barcode-corner bc-br"></div>
+      <div class="barcode-line"></div>
+    </div>
+  </div>
+  <div class="barcode-hint" id="barcode-hint">ضع الباركود داخل الإطار</div>
+  <div class="barcode-manual">
+    <input id="manual-barcode" type="number" placeholder="أو أدخل الرقم يدوياً...">
+    <button onclick="lookupManualBarcode()">🔍 بحث</button>
   </div>
 </div>
 
@@ -2076,7 +2125,9 @@ window.saveProduct=async()=>{
     offer_price:(!hidePrice&&!isNaN(offer)&&offer>0&&offer<price)?offer:null,
     image_url:imageUrl,description:$('p-desc').value.trim()||null,
     category:$('p-cat').value,in_stock:$('p-avail-toggle').classList.contains('on'),
-    hide_price:hidePrice,barcode:null,updated_at:Date.now()};
+    hide_price:hidePrice,
+    barcode:$('p-name').dataset.barcode||null,
+    updated_at:Date.now()};
   if(!editingProductId)prodData.created_at=Date.now();
   try{
     const path=editingProductId?`products/${selectedSellerStoreId}/${editingProductId}`:`products/${selectedSellerStoreId}`;
@@ -2109,6 +2160,107 @@ window.deleteProduct=async(storeId,prodId)=>{
     await update(ref(db,`stores/${storeId}`),{product_names:names});
   }catch(e){toast(t.saveErr+e.message);}
 };
+
+/* ══════════════════════════════════════
+   BARCODE SCANNER
+══════════════════════════════════════ */
+let html5QrCode=null;
+let barcodeScanning=false;
+
+window.openBarcodeScanner=()=>{
+  if(!selectedSellerStoreId){toast(t.selectStore);return;}
+  $('barcode-modal').classList.add('open');
+  $('manual-barcode').value='';
+  $('barcode-status').textContent=curLang==='ar'?'📷 وجّه الكاميرا نحو الباركود':'📷 Point camera at barcode';
+  _startScanner();
+};
+
+function _startScanner(){
+  if(typeof Html5Qrcode==='undefined'){
+    toast('❌ مكتبة الماسح لم تُحمَّل — استخدم الإدخال اليدوي');return;
+  }
+  if(html5QrCode){try{html5QrCode.stop();}catch(e){}}
+  html5QrCode=new Html5Qrcode('barcode-reader');
+  barcodeScanning=true;
+
+  const formats=[
+    Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,
+    Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,
+    Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,
+    Html5QrcodeSupportedFormats.QR_CODE
+  ];
+
+  html5QrCode.start(
+    {facingMode:'environment'},
+    {fps:12,qrbox:{width:260,height:160},formatsToSupport:formats,
+     aspectRatio:1.5,disableFlip:false},
+    async(code)=>{
+      if(!barcodeScanning)return;
+      barcodeScanning=false;
+      $('barcode-status').textContent='✅ '+code;
+      await closeBarcodeScanner();
+      await lookupBarcode(code);
+    },
+    ()=>{}
+  ).catch(err=>{
+    console.warn('[SCANNER]',err);
+    toast(curLang==='ar'?'⚠️ تعذّر الوصول للكاميرا — استخدم الإدخال اليدوي':'⚠️ Camera unavailable — use manual input');
+  });
+}
+
+window.closeBarcodeScanner=async()=>{
+  barcodeScanning=false;
+  try{if(html5QrCode)await html5QrCode.stop();}catch(e){}
+  html5QrCode=null;
+  $('barcode-modal').classList.remove('open');
+};
+
+window.lookupManualBarcode=()=>{
+  const code=$('manual-barcode').value.trim();
+  if(!code||code.length<6){toast(curLang==='ar'?'⚠️ أدخل رقم الباركود كاملاً':'⚠️ Enter full barcode number');return;}
+  closeBarcodeScanner();
+  lookupBarcode(code);
+};
+
+async function lookupBarcode(barcode){
+  toast(curLang==='ar'?`⏳ جاري البحث عن: ${barcode}`:`⏳ Looking up: ${barcode}`,6000);
+
+  let productName='', productImage='', productBrand='';
+
+  try{
+    /* Open Food Facts API — مجاني بدون مفتاح */
+    const res=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const data=await res.json();
+
+    if(data.status===1&&data.product){
+      const p=data.product;
+      productName = p.product_name_ar||p.product_name_en||p.product_name||p.generic_name_ar||p.generic_name||'';
+      productBrand= p.brands||'';
+      productImage= p.image_front_url||p.image_url||'';
+      if(productBrand&&productName&&!productName.includes(productBrand))
+        productName=`${productName} — ${productBrand}`;
+    }
+  }catch(e){console.warn('[OPENFOODFACTS]',e);}
+
+  /* فتح مودال المنتج مع البيانات */
+  openProductModal();
+  setTimeout(()=>{
+    if(productName){
+      $('p-name').value=productName;
+      toast(`✅ ${curLang==='ar'?'وُجد المنتج':'Product found'}: ${productName}`,3000);
+    }else{
+      toast(curLang==='ar'?`⚠️ الباركود ${barcode} غير موجود في القاعدة — أكمل يدوياً`:`⚠️ Barcode ${barcode} not found — fill manually`,4000);
+    }
+    if(productImage){
+      $('p-img-url').value=productImage;
+      previewUrlImage($('p-img-url'));
+    }
+    /* حفظ الباركود لاحقاً مع المنتج */
+    $('p-name').dataset.barcode=barcode;
+    /* التركيز على حقل السعر مباشرة */
+    setTimeout(()=>$('p-price').focus(),400);
+  },350);
+}
 
 /* ══════════════════════════════════════
    NAVIGATION — GTA STYLE
