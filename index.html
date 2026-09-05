@@ -304,6 +304,26 @@ select.form-input{appearance:none}
 .delivery-badge.ship{background:#dbeafe;color:#1d4ed8}
 .delivery-badge.cod{background:#dcfce7;color:#15803d}
 
+/* ── RATINGS ── */
+.rating-stars-display{display:flex;align-items:center;gap:5px;margin-top:4px}
+.stars-row{display:flex;gap:2px}
+.star-icon{font-size:13px;line-height:1}
+.rating-avg{font-size:13px;font-weight:800;color:#f59e0b}
+.rating-count{font-size:11px;color:var(--muted)}
+.btn-rate{background:none;border:1px solid rgba(245,158,11,.4);border-radius:9px;padding:5px 12px;font-size:11px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;color:#f59e0b;margin-top:8px;display:flex;align-items:center;gap:4px}
+.btn-rate:active{background:rgba(245,158,11,.08)}
+/* Rating Modal */
+.rating-star-btn{font-size:36px;background:none;border:none;cursor:pointer;transition:transform .15s;line-height:1;padding:4px}
+.rating-star-btn:active{transform:scale(1.2)}
+.rating-stars-select{display:flex;justify-content:center;gap:4px;margin:16px 0}
+.rating-comment{width:100%;height:90px;border-radius:14px;border:1.5px solid #e5e7eb;padding:12px 14px;font-size:14px;font-family:'Cairo',sans-serif;outline:none;resize:none;direction:rtl;text-align:right}
+.rating-comment:focus{border-color:#f59e0b}
+.rating-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;max-height:220px;overflow-y:auto}
+.rating-item{background:#faf8f5;border-radius:12px;padding:10px 12px}
+.rating-item-stars{font-size:11px;margin-bottom:3px}
+.rating-item-comment{font-size:12px;color:#444;line-height:1.5}
+.rating-item-time{font-size:10px;color:var(--muted);margin-top:3px}
+
 /* ── BARCODE SCANNER ── */
 .barcode-modal{position:fixed;inset:0;background:#000;z-index:1200;display:none;flex-direction:column;align-items:center;justify-content:center}
 .barcode-modal.open{display:flex}
@@ -815,6 +835,42 @@ select.form-input{appearance:none}
     <div style="display:flex;gap:10px;margin-top:20px">
       <button onclick="closeFilterPanel()" style="flex:1;height:48px;border-radius:14px;background:#f3f4f6;border:none;font-size:14px;font-family:'Cairo',sans-serif;cursor:pointer;color:#555;font-weight:700" id="btn-cancel-filter">إلغاء</button>
       <button onclick="applyAdvancedFilters(true)" style="flex:1;height:48px;border-radius:14px;background:var(--or);color:#fff;border:none;font-size:14px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer" id="btn-apply-filter">تطبيق</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RATING MODAL ═══ -->
+<div class="modal-back" id="rating-modal">
+  <div class="modal">
+    <div style="font-size:16px;font-weight:800;text-align:center;margin-bottom:4px" id="rating-store-name">تقييم المحل</div>
+    <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px" id="rating-store-sub">شاركنا رأيك</div>
+
+    <!-- Star selector -->
+    <div class="rating-stars-select" id="rating-stars-select">
+      <button class="rating-star-btn" data-star="1" onclick="selectStar(1)">☆</button>
+      <button class="rating-star-btn" data-star="2" onclick="selectStar(2)">☆</button>
+      <button class="rating-star-btn" data-star="3" onclick="selectStar(3)">☆</button>
+      <button class="rating-star-btn" data-star="4" onclick="selectStar(4)">☆</button>
+      <button class="rating-star-btn" data-star="5" onclick="selectStar(5)">☆</button>
+    </div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:14px" id="rating-label">اختر تقييمك</div>
+
+    <!-- Comment -->
+    <textarea class="rating-comment" id="rating-comment" placeholder="أضف تعليقاً (اختياري)..."></textarea>
+
+    <!-- Actions -->
+    <div class="modal-acts" style="margin-top:12px">
+      <button class="btn-cancel" onclick="closeModal('rating-modal')">إلغاء</button>
+      <button class="btn-save" id="btn-submit-rating" onclick="submitRating()" style="background:#f59e0b">⭐ إرسال التقييم</button>
+    </div>
+
+    <!-- Previous ratings -->
+    <div id="ratings-list-wrap" style="display:none">
+      <div style="font-size:13px;font-weight:800;margin:16px 0 8px;display:flex;align-items:center;gap:6px">
+        <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block"></span>
+        <span id="ratings-list-title">آراء الزبائن</span>
+      </div>
+      <div class="rating-list" id="ratings-list"></div>
     </div>
   </div>
 </div>
@@ -1710,7 +1766,16 @@ window.openDrawer=storeId=>{
       ${s.whatsapp?`<button class="btn-wa" onclick="openWa('${s.whatsapp}')">${t.whatsapp}</button>`:''}
       ${s.phone?`<button class="btn-call" onclick="openCall('${s.phone}')">${t.callBtn}</button>`:''}
       ${s.location?.lat?`<button class="btn-nav" onclick="startNavigation('${storeId}')">🧭 ${curLang==='ar'?'التوجه إليه':'Navigate'}</button>`:''}
-    </div>`;
+    </div>
+    <!-- Rating display -->
+    <div class="rating-stars-display" id="d-rating-display" style="display:none">
+      <div class="stars-row" id="d-stars-row"></div>
+      <span class="rating-avg" id="d-rating-avg"></span>
+      <span class="rating-count" id="d-rating-count"></span>
+    </div>
+    <button class="btn-rate" onclick="openRatingModal('${storeId}')">
+      ⭐ ${curLang==='ar'?'قيّم المحل':'Rate Store'}
+    </button>`;
   $('d-total').textContent='–';$('d-avail').textContent='–';
   $('d-products').innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">${t.loadingProds}</div>`;
   $('d-cats').innerHTML='';
@@ -1719,6 +1784,8 @@ window.openDrawer=storeId=>{
   $('drawer-back').classList.add('open');
   $('store-drawer').classList.add('open');
   renderMapPins();
+  /* تحميل التقييمات */
+  loadStoreRating(storeId);
 
   /* ── إذا بدون إنترنت → كاش فوراً ── */
   if(!navigator.onLine){
@@ -2206,6 +2273,137 @@ window.deleteProduct=async(storeId,prodId)=>{
     await update(ref(db,`stores/${storeId}`),{product_names:names});
   }catch(e){toast(t.saveErr+e.message);}
 };
+
+/* ══════════════════════════════════════
+   RATINGS SYSTEM
+══════════════════════════════════════ */
+let currentRatingStoreId=null;
+let selectedStars=0;
+
+/* ID مجهول لكل جهاز — تقييم واحد لكل محل */
+function getUserId(){
+  let uid=localStorage.getItem('lango_uid');
+  if(!uid){uid='u_'+Math.random().toString(36).substr(2,9)+Date.now().toString(36);localStorage.setItem('lango_uid',uid);}
+  return uid;
+}
+
+function renderStarsHtml(avg,size=13){
+  const full=Math.floor(avg), half=avg-full>=0.5;
+  let html='';
+  for(let i=1;i<=5;i++){
+    if(i<=full) html+=`<span class="star-icon" style="font-size:${size}px">⭐</span>`;
+    else if(i===full+1&&half) html+=`<span class="star-icon" style="font-size:${size}px">🌟</span>`;
+    else html+=`<span class="star-icon" style="font-size:${size}px;opacity:.25">⭐</span>`;
+  }
+  return html;
+}
+
+function ratingLabel(stars){
+  const ar=['','ضعيف 😞','مقبول 😐','جيد 🙂','ممتاز 😊','رائع جداً 🤩'];
+  const en=['','Poor 😞','Fair 😐','Good 🙂','Great 😊','Amazing 🤩'];
+  return curLang==='ar'?ar[stars]||'':en[stars]||'';
+}
+
+async function loadStoreRating(storeId){
+  try{
+    const snap=await get(ref(db,`ratings/${storeId}`));
+    if(!snap.exists()){$('d-rating-display').style.display='none';return;}
+    const ratings=Object.values(snap.val());
+    const avg=ratings.reduce((s,r)=>s+r.stars,0)/ratings.length;
+    const avgRound=Math.round(avg*10)/10;
+    $('d-stars-row').innerHTML=renderStarsHtml(avg);
+    $('d-rating-avg').textContent=avgRound;
+    $('d-rating-count').textContent=`(${ratings.length} ${curLang==='ar'?'تقييم':'reviews'})`;
+    $('d-rating-display').style.display='flex';
+  }catch(e){console.warn('[RATINGS]',e);}
+}
+
+window.openRatingModal=async storeId=>{
+  currentRatingStoreId=storeId;
+  selectedStars=0;
+  const store=allStores[storeId];
+  $('rating-store-name').textContent=store?.name||'';
+  $('rating-store-sub').textContent=curLang==='ar'?'شاركنا رأيك في هذا المحل':'Share your experience';
+  $('rating-comment').value='';
+  $('rating-label').textContent=curLang==='ar'?'اختر تقييمك':'Select your rating';
+  /* إعادة ضبط النجوم */
+  document.querySelectorAll('.rating-star-btn').forEach(b=>{b.textContent='☆';b.style.filter='';});
+
+  /* تحقق هل قيّم من قبل */
+  const uid=getUserId();
+  try{
+    const snap=await get(ref(db,`ratings/${storeId}/${uid}`));
+    if(snap.exists()){
+      const prev=snap.val();
+      selectStar(prev.stars);
+      $('rating-comment').value=prev.comment||'';
+      $('rating-label').textContent=curLang==='ar'?'قيّمت هذا المحل سابقاً — يمكنك التعديل':'You rated this before — you can update';
+    }
+  }catch(e){}
+
+  /* تحميل التقييمات السابقة */
+  try{
+    const snap=await get(ref(db,`ratings/${storeId}`));
+    if(snap.exists()){
+      const list=Object.values(snap.val()).filter(r=>r.comment).sort((a,b)=>b.ts-a.ts).slice(0,5);
+      if(list.length){
+        $('ratings-list-wrap').style.display='block';
+        $('ratings-list-title').textContent=curLang==='ar'?'آراء الزبائن':'Customer Reviews';
+        $('ratings-list').innerHTML=list.map(r=>`
+          <div class="rating-item">
+            <div class="rating-item-stars">${renderStarsHtml(r.stars,12)}</div>
+            ${r.comment?`<div class="rating-item-comment">${r.comment}</div>`:''}
+            <div class="rating-item-time">${timeSince(r.ts)}</div>
+          </div>`).join('');
+      }else $('ratings-list-wrap').style.display='none';
+    }else $('ratings-list-wrap').style.display='none';
+  }catch(e){}
+
+  $('rating-modal').classList.add('open');
+};
+
+window.selectStar=n=>{
+  selectedStars=n;
+  document.querySelectorAll('.rating-star-btn').forEach(b=>{
+    const s=parseInt(b.dataset.star);
+    b.textContent=s<=n?'⭐':'☆';
+    b.style.filter=s<=n?'drop-shadow(0 0 3px rgba(245,158,11,.6))':'';
+  });
+  $('rating-label').textContent=ratingLabel(n);
+};
+
+window.submitRating=async()=>{
+  if(!selectedStars){toast(curLang==='ar'?'⚠️ اختر عدد النجوم أولاً':'⚠️ Please select stars first');return;}
+  const btn=$('btn-submit-rating');
+  btn.disabled=true;btn.textContent=curLang==='ar'?'جاري الإرسال...':'Sending...';
+  const uid=getUserId();
+  const ratingData={
+    stars:selectedStars,
+    comment:$('rating-comment').value.trim()||null,
+    ts:Date.now()
+  };
+  try{
+    await set(ref(db,`ratings/${currentRatingStoreId}/${uid}`),ratingData);
+    closeModal('rating-modal');
+    toast(curLang==='ar'?'✅ شكراً على تقييمك!':'✅ Thanks for your review!');
+    loadStoreRating(currentRatingStoreId);
+  }catch(e){
+    toast((curLang==='ar'?'❌ خطأ في الإرسال: ':'❌ Error: ')+e.message);
+  }finally{
+    btn.disabled=false;
+    btn.textContent=curLang==='ar'?'⭐ إرسال التقييم':'⭐ Submit Rating';
+  }
+};
+
+function timeSince(ts){
+  const m=Math.floor((Date.now()-ts)/60000);
+  if(m<1) return curLang==='ar'?'الآن':'just now';
+  if(m<60) return `${m} ${curLang==='ar'?'د':'m'}`;
+  const h=Math.floor(m/60);
+  if(h<24) return `${h} ${curLang==='ar'?'س':'h'}`;
+  const d=Math.floor(h/24);
+  return `${d} ${curLang==='ar'?'يوم':'d'}`;
+}
 
 /* ══════════════════════════════════════
    BARCODE SCANNER
