@@ -304,6 +304,58 @@ select.form-input{appearance:none}
 .delivery-badge.ship{background:#dbeafe;color:#1d4ed8}
 .delivery-badge.cod{background:#dcfce7;color:#15803d}
 
+/* ── FAVORITES ── */
+@keyframes heartPop{
+  0%  {transform:scale(1)}
+  25% {transform:scale(1.5)}
+  50% {transform:scale(0.88)}
+  70% {transform:scale(1.18)}
+  100%{transform:scale(1)}
+}
+@keyframes heartShake{
+  0%,100%{transform:rotate(0)}
+  25%{transform:rotate(-12deg) scale(1.3)}
+  75%{transform:rotate(12deg)  scale(1.3)}
+}
+.btn-fav{
+  background:none;border:none;cursor:pointer;
+  font-size:26px;line-height:1;padding:4px;
+  transition:filter .2s;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.btn-fav:active{filter:brightness(.85)}
+.btn-fav.popping{animation:heartPop .45s cubic-bezier(.36,.07,.19,.97) forwards}
+.btn-fav-header{
+  position:relative;width:38px;height:38px;
+  border-radius:10px;background:rgba(249,115,22,.1);
+  border:none;font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:.2s;
+}
+.btn-fav-header.active{background:rgba(249,115,22,.18)}
+.fav-badge{
+  position:absolute;top:-4px;right:-4px;
+  background:var(--or);color:#fff;border-radius:50%;
+  width:17px;height:17px;font-size:9px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid #fff;
+}
+/* Favorites Sheet */
+.fav-sheet{background:#fff;border-radius:24px 24px 0 0;padding:0 16px 36px;width:100%;max-height:80vh;overflow-y:auto}
+.fav-handle{display:flex;justify-content:center;padding:12px 0 16px}
+.fav-handle-bar{width:40px;height:5px;border-radius:99px;background:#e5e7eb}
+.fav-card{display:flex;align-items:center;gap:12px;background:#fff;border-radius:16px;border:1.5px solid var(--border);padding:12px 14px;cursor:pointer;transition:.15s;margin-bottom:10px;width:100%;text-align:right}
+.fav-card:active{background:rgba(249,115,22,.04);border-color:var(--or)}
+.fav-card-icon{width:48px;height:48px;border-radius:13px;background:rgba(249,115,22,.1);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden}
+.fav-card-icon img{width:100%;height:100%;object-fit:cover;border-radius:13px}
+.fav-card-info{flex:1;min-width:0}
+.fav-card-name{font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav-card-addr{font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav-card-status{font-size:9px;padding:2px 8px;border-radius:99px;font-weight:700;flex-shrink:0}
+.fav-remove{background:none;border:none;cursor:pointer;font-size:18px;color:#ddd;padding:4px;flex-shrink:0}
+.fav-remove:active{color:var(--re)}
+.fav-empty{text-align:center;padding:40px 20px;color:var(--muted)}
+
 /* ── RATINGS ── */
 .rating-stars-display{display:flex;align-items:center;gap:5px;margin-top:4px}
 .stars-row{display:flex;gap:2px}
@@ -449,6 +501,9 @@ select.form-input{appearance:none}
           <div style="font-size:10px;color:var(--muted)" id="store-count">...</div>
         </div>
         <div style="display:flex;gap:5px;align-items:center">
+          <button class="btn-fav-header" id="btn-favs" onclick="openFavoritesSheet()" title="المفضلة">
+            🤍<span class="fav-badge" id="fav-badge" style="display:none">0</span>
+          </button>
           <button onclick="openSearchFilter()" id="btn-search-filter" style="position:relative;width:38px;height:38px;border-radius:10px;background:rgba(249,115,22,.1);border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">
             🔍<span id="sf-active-badge" style="display:none;position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--or);border:2px solid #fff"></span>
           </button>
@@ -836,6 +891,21 @@ select.form-input{appearance:none}
       <button onclick="closeFilterPanel()" style="flex:1;height:48px;border-radius:14px;background:#f3f4f6;border:none;font-size:14px;font-family:'Cairo',sans-serif;cursor:pointer;color:#555;font-weight:700" id="btn-cancel-filter">إلغاء</button>
       <button onclick="applyAdvancedFilters(true)" style="flex:1;height:48px;border-radius:14px;background:var(--or);color:#fff;border:none;font-size:14px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer" id="btn-apply-filter">تطبيق</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ FAVORITES SHEET ═══ -->
+<div class="modal-back" id="favorites-sheet">
+  <div class="fav-sheet">
+    <div class="fav-handle"><div class="fav-handle-bar"></div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:22px">🧡</span>
+        <span style="font-size:16px;font-weight:800" id="fav-sheet-title">المحلات المفضلة</span>
+      </div>
+      <button onclick="closeModal('favorites-sheet')" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer">✕</button>
+    </div>
+    <div id="fav-list"></div>
   </div>
 </div>
 
@@ -1735,6 +1805,7 @@ window.openDrawer=storeId=>{
         </div>
       </div>
       <button onclick="closeDrawer()" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer;padding:4px">✕</button>
+      <button class="btn-fav" id="d-fav-btn" onclick="toggleFavorite('${storeId}')">${isFavorite(storeId)?'🧡':'🤍'}</button>
     </div>
     <div class="contact-row">
       ${s.whatsapp?`<button class="btn-wa" onclick="openWa('${s.whatsapp}')">${t.whatsapp}</button>`:''}
@@ -2247,6 +2318,110 @@ window.deleteProduct=async(storeId,prodId)=>{
     await update(ref(db,`stores/${storeId}`),{product_names:names});
   }catch(e){toast(t.saveErr+e.message);}
 };
+
+/* ══════════════════════════════════════
+   FAVORITES SYSTEM
+══════════════════════════════════════ */
+const FAV_KEY='lango_favorites';
+
+function getFavorites(){
+  try{return JSON.parse(localStorage.getItem(FAV_KEY)||'[]');}
+  catch(e){return[];}
+}
+function saveFavorites(favs){
+  localStorage.setItem(FAV_KEY,JSON.stringify(favs));
+  updateFavBadge();
+}
+function isFavorite(storeId){return getFavorites().includes(storeId);}
+
+function updateFavBadge(){
+  const n=getFavorites().length;
+  const badge=$('fav-badge');
+  if(!badge)return;
+  badge.style.display=n?'flex':'none';
+  badge.textContent=n;
+  $('btn-favs').textContent=n?'🧡':'🤍';
+  if(n)$('btn-favs').classList.add('active');
+  else $('btn-favs').classList.remove('active');
+  /* إعادة تركيب الزر مع الـ badge */
+  $('btn-favs').innerHTML=`${n?'🧡':'🤍'}<span class="fav-badge" id="fav-badge" style="display:${n?'flex':'none'}">${n}</span>`;
+}
+
+window.toggleFavorite=storeId=>{
+  let favs=getFavorites();
+  const btn=$('d-fav-btn');
+  const adding=!favs.includes(storeId);
+
+  if(adding) favs.push(storeId);
+  else favs=favs.filter(id=>id!==storeId);
+  saveFavorites(favs);
+
+  /* تحديث أيقونة القلب مع انيميشن */
+  if(btn){
+    btn.textContent=adding?'🧡':'🤍';
+    btn.classList.remove('popping');
+    void btn.offsetWidth; /* reset animation */
+    btn.classList.add('popping');
+    setTimeout(()=>btn.classList.remove('popping'),500);
+  }
+
+  toast(adding
+    ?(curLang==='ar'?'🧡 أُضيف للمفضلة':'🧡 Added to favorites')
+    :(curLang==='ar'?'🤍 أُزيل من المفضلة':'🤍 Removed from favorites')
+  ,2000);
+};
+
+window.openFavoritesSheet=()=>{
+  const favs=getFavorites();
+  $('fav-sheet-title').textContent=curLang==='ar'?`المحلات المفضلة (${favs.length})`:`Favorites (${favs.length})`;
+  const list=$('fav-list');
+  if(!favs.length){
+    list.innerHTML=`<div class="fav-empty">
+      <div style="font-size:52px;margin-bottom:12px">🤍</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px">${curLang==='ar'?'لا توجد محلات مفضلة':'No favorites yet'}</div>
+      <div style="font-size:13px">${curLang==='ar'?'اضغط على 🤍 في أي محل لحفظه هنا':'Tap 🤍 on any store to save it here'}</div>
+    </div>`;
+  }else{
+    list.innerHTML=favs.map(id=>{
+      const s=allStores[id]; if(!s)return'';
+      const sl=storeStatusLabel(s);
+      const coverH=s.cover_image_url
+        ?`<img src="${s.cover_image_url}" style="width:100%;height:100%;object-fit:cover;border-radius:13px" onerror="this.onerror=null;this.src='https://placehold.co/48?text=🏪'">`
+        :'🏪';
+      return `<div class="fav-card" onclick="flyToStore('${id}')">
+        <div class="fav-card-icon">${coverH}</div>
+        <div class="fav-card-info">
+          <div class="fav-card-name">${s.name}</div>
+          <div class="fav-card-addr">${s.location?.address_name?'📍 '+s.location.address_name:''}</div>
+        </div>
+        <span class="fav-card-status ${sl.cls}">${sl.text}</span>
+        <button class="fav-remove" onclick="event.stopPropagation();removeFav('${id}')" title="${curLang==='ar'?'إزالة':'Remove'}">✕</button>
+      </div>`;
+    }).join('');
+  }
+  $('favorites-sheet').classList.add('open');
+};
+
+window.removeFav=id=>{
+  const favs=getFavorites().filter(f=>f!==id);
+  saveFavorites(favs);
+  openFavoritesSheet(); /* تحديث القائمة */
+  toast(curLang==='ar'?'🤍 أُزيل من المفضلة':'🤍 Removed',2000);
+};
+
+window.flyToStore=id=>{
+  closeModal('favorites-sheet');
+  const s=allStores[id];
+  if(s?.location?.lat&&map){
+    map.flyTo([s.location.lat,s.location.lng],16,{animate:true,duration:1});
+    setTimeout(()=>openDrawer(id),800);
+  }else{
+    openDrawer(id);
+  }
+};
+
+/* تحديث الـ badge عند بداية التطبيق */
+setTimeout(updateFavBadge,2500);
 
 /* ══════════════════════════════════════
    RATINGS SYSTEM
