@@ -1260,7 +1260,41 @@ window.previewUrlImage=input=>{
 ══════════════════════════════════════ */
 const IMGBB_KEY='d6263b821a36173a0058b725c8328ff9';
 
-/* ── ضغط الصورة بالكانفاس ── */
+/* ── ضغط الصورة وإرجاعها Base64 DataURL (للتخزين في Firebase) ── */
+async function compressToBase64(file, maxDim=700, quality=0.80){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let{width,height}=img;
+      /* resize مع الحفاظ على النسبة */
+      if(width>maxDim||height>maxDim){
+        if(width>height){height=Math.round(height*maxDim/width);width=maxDim;}
+        else{width=Math.round(width*maxDim/height);height=maxDim;}
+      }
+      const canvas=document.createElement('canvas');
+      canvas.width=width;canvas.height=height;
+      canvas.getContext('2d').drawImage(img,0,0,width,height);
+      const dataUrl=canvas.toDataURL('image/jpeg',quality);
+      /* تحقق من الحجم — إذا أكبر من 400KB نضغط أكثر */
+      if(dataUrl.length>550000){
+        const canvas2=document.createElement('canvas');
+        const scale=Math.sqrt(400000/dataUrl.length);
+        canvas2.width=Math.round(width*scale);
+        canvas2.height=Math.round(height*scale);
+        canvas2.getContext('2d').drawImage(img,0,0,canvas2.width,canvas2.height);
+        res(canvas2.toDataURL('image/jpeg',0.72));
+      }else{
+        res(dataUrl);
+      }
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('load failed'));};
+    img.src=url;
+  });
+}
+
+/* ── ضغط الصورة بالكانفاس (يرجع File) ── */
 async function compressImage(file,maxDim=900,quality=0.82){
   return new Promise((res,rej)=>{
     const img=new Image();
@@ -2008,11 +2042,11 @@ window.saveStore=async()=>{
   let coverUrl=editingStoreId?allStores[editingStoreId]?.cover_image_url||null:null;
   if(pendingCoverFile){
     try{
-      toast(curLang==='ar'?'⏳ جاري رفع صورة الغلاف...':'⏳ Uploading cover...',10000);
-      coverUrl=await uploadToImgBB(pendingCoverFile);
+      toast(curLang==='ar'?'⏳ جاري معالجة صورة الغلاف...':'⏳ Processing cover...',6000);
+      coverUrl=await compressToBase64(pendingCoverFile,1000,0.82);
     }catch(e){
-      console.error('[IMGBB COVER]',e);
-      toast((curLang==='ar'?'⚠️ فشل رفع الغلاف: ':'⚠️ Cover upload failed: ')+e.message);
+      console.error('[COVER B64]',e);
+      toast((curLang==='ar'?'⚠️ فشل معالجة الغلاف: ':'⚠️ Cover failed: ')+e.message);
     }
   }
 
@@ -2110,12 +2144,12 @@ window.saveProduct=async()=>{
 
   if(capturedFile){
     try{
-      toast(curLang==='ar'?'⏳ جاري رفع الصورة...':'⏳ Uploading image...',10000);
-      imageUrl=await uploadToImgBB(capturedFile);
-      toast(curLang==='ar'?'✅ تم رفع الصورة':'✅ Image uploaded');
+      toast(curLang==='ar'?'⏳ جاري معالجة الصورة...':'⏳ Processing image...',6000);
+      imageUrl=await compressToBase64(capturedFile,700,0.80);
+      toast(curLang==='ar'?'✅ تم تجهيز الصورة':'✅ Image ready');
     }catch(e){
-      console.error('[IMGBB PRODUCT]',e);
-      toast((curLang==='ar'?'❌ فشل رفع الصورة: ':'❌ Upload failed: ')+e.message);
+      console.error('[IMG B64]',e);
+      toast((curLang==='ar'?'❌ فشل معالجة الصورة: ':'❌ Image failed: ')+e.message);
       imageUrl=typedUrl;
     }
   }
