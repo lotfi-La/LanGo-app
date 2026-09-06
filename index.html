@@ -127,7 +127,7 @@ body{font-family:'Cairo',Tahoma,sans-serif;background:#f9fafb;color:#111827;over
 .offer-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px}
 
 /* ── GPS / FILTER BTNs ── */
-.fab-wrap{position:absolute;bottom:24px;z-index:450;display:flex;flex-direction:column;gap:8px;left:12px}
+.fab-wrap{position:absolute;bottom:90px;z-index:450;display:flex;flex-direction:column;gap:8px;left:12px}
 #root[dir=ltr] .fab-wrap{left:auto;right:12px}
 .fab{width:46px;height:46px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 12px rgba(0,0,0,.2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
@@ -304,6 +304,77 @@ select.form-input{appearance:none}
 .delivery-badge.ship{background:#dbeafe;color:#1d4ed8}
 .delivery-badge.cod{background:#dcfce7;color:#15803d}
 
+/* ══════════════════════════════════════
+   BOTTOM TAB BAR
+══════════════════════════════════════ */
+.tab-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:350;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(16px);
+  border-top:1px solid var(--border);
+  display:flex;padding:6px 0 22px;
+  box-shadow:0 -4px 20px rgba(0,0,0,.07);
+  display:none; /* يظهر بعد الـ splash */
+}
+.tab-bar.visible{display:flex}
+.tab-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  gap:3px;background:none;border:none;cursor:pointer;
+  font-family:'Cairo',sans-serif;padding:4px 0;transition:.15s;
+}
+.tab-btn .tab-ico{font-size:22px;transition:.2s}
+.tab-btn .tab-lbl{font-size:10px;font-weight:700;color:var(--muted);transition:.2s}
+.tab-btn.active .tab-ico{transform:scale(1.1)}
+.tab-btn.active .tab-lbl{color:var(--or)}
+.tab-indicator{height:3px;width:32px;border-radius:99px;background:var(--or);margin-bottom:-4px;opacity:0;transition:.2s}
+.tab-btn.active .tab-indicator{opacity:1}
+
+/* ══════════════════════════════════════
+   COMMUNITY SCREEN
+══════════════════════════════════════ */
+#community{background:#f9fafb;overflow-y:auto;flex-direction:column;padding-bottom:80px}
+.comm-header{background:#fff;border-bottom:1px solid var(--border);padding:14px 16px;position:sticky;top:0;z-index:10}
+.comm-title{font-size:20px;font-weight:900;color:var(--or)}
+.comm-sub{font-size:12px;color:var(--muted);margin-top:2px}
+/* Groups grid */
+.groups-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
+.group-card{background:#fff;border-radius:18px;border:1.5px solid var(--border);padding:16px 14px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;align-items:flex-start;gap:8px;position:relative;overflow:hidden}
+.group-card:active{transform:scale(.97);border-color:var(--or)}
+.group-card-ico{font-size:34px;line-height:1}
+.group-card-name{font-size:13px;font-weight:800;color:#111;line-height:1.2}
+.group-card-desc{font-size:10px;color:var(--muted);line-height:1.4}
+.group-card-count{font-size:10px;color:var(--or);font-weight:700;background:rgba(249,115,22,.1);padding:2px 8px;border-radius:99px}
+/* Posts screen */
+#group-posts-screen{background:#f9fafb;overflow-y:auto;flex-direction:column;padding-bottom:80px}
+.posts-header{background:#fff;border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+.posts-back{background:none;border:none;font-size:22px;cursor:pointer;padding:4px;color:#555}
+.posts-group-ico{font-size:26px}
+.posts-title{font-size:16px;font-weight:800;flex:1}
+.btn-new-post{background:var(--or);color:#fff;border:none;border-radius:12px;padding:8px 16px;font-size:13px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px}
+.posts-list{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+/* Post card */
+.post-card{background:#fff;border-radius:18px;border:1px solid var(--border);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.post-header{display:flex;align-items:center;gap:10px;padding:12px 14px 0}
+.post-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--or),#ea580c);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;font-weight:800;color:#fff}
+.post-alias{font-size:13px;font-weight:700}
+.post-time{font-size:10px;color:var(--muted)}
+.post-body{padding:10px 14px}
+.post-text{font-size:14px;line-height:1.6;color:#222}
+.post-img{width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px;cursor:pointer}
+.post-store-link{display:flex;align-items:center;gap:8px;background:#faf5ef;border-radius:12px;padding:9px 12px;margin-top:10px;cursor:pointer;border:1px solid var(--border);transition:.15s}
+.post-store-link:active{border-color:var(--or);background:rgba(249,115,22,.06)}
+.post-store-link-name{font-size:12px;font-weight:700;flex:1}
+.post-store-link-arrow{font-size:14px;color:var(--or)}
+.post-stars{display:flex;gap:2px;margin-top:8px}
+.post-footer{display:flex;align-items:center;gap:12px;padding:8px 14px 12px;border-top:1px solid #fafafa;margin-top:6px}
+.btn-like{background:none;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;color:var(--muted);display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px;transition:.15s}
+.btn-like.liked{color:var(--re);background:rgba(239,68,68,.08)}
+.btn-like:active{transform:scale(.93)}
+@keyframes likePop{0%{transform:scale(1)}40%{transform:scale(1.4)}100%{transform:scale(1)}}
+.btn-like.popping .like-ico{animation:likePop .35s ease}
+/* New post modal */
+.new-post-sheet{background:#fff;border-radius:24px 24px 0 0;padding:0 18px 40px;width:100%;max-height:92vh;overflow-y:auto}
+.linked-store-preview{background:#faf5ef;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;border:1px solid var(--border)}
+
 /* ── FAVORITES ── */
 @keyframes heartPop{
   0%  {transform:scale(1)}
@@ -427,7 +498,7 @@ select.form-input{appearance:none}
 .cover-upload-preview{width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:8px;display:none;border:2px solid rgba(249,115,22,.3)}
 
 /* ── NAVIGATION HUD ── */
-.nav-hud{position:fixed;bottom:0;left:0;right:0;z-index:450;padding:0 12px 28px;pointer-events:none;animation:slideUpIn .35s ease}
+.nav-hud{position:fixed;bottom:72px;left:0;right:0;z-index:450;padding:0 12px;pointer-events:none;animation:slideUpIn .35s ease}
 @keyframes slideUpIn{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
 .nav-card{background:rgba(17,24,39,.96);backdrop-filter:blur(16px);border-radius:22px;padding:14px 16px;color:#fff;display:flex;align-items:center;gap:12px;pointer-events:auto;box-shadow:0 -4px 30px rgba(0,0,0,.35)}
 .nav-icon{width:48px;height:48px;border-radius:14px;background:rgba(249,115,22,.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
@@ -894,6 +965,102 @@ select.form-input{appearance:none}
   </div>
 </div>
 
+<!-- ═══ BOTTOM TAB BAR ═══ -->
+<div class="tab-bar" id="tab-bar">
+  <button class="tab-btn active" id="tab-map-btn" onclick="switchTab('map')">
+    <div class="tab-indicator"></div>
+    <span class="tab-ico">🗺️</span>
+    <span class="tab-lbl" id="tab-map-lbl">الخريطة</span>
+  </button>
+  <button class="tab-btn" id="tab-community-btn" onclick="switchTab('community')">
+    <div class="tab-indicator"></div>
+    <span class="tab-ico">👥</span>
+    <span class="tab-lbl" id="tab-comm-lbl">المجتمع</span>
+  </button>
+</div>
+
+<!-- ═══ COMMUNITY SCREEN ═══ -->
+<div id="community" class="screen">
+  <div class="comm-header">
+    <div class="comm-title">👥 LanGo Community</div>
+    <div class="comm-sub" id="comm-sub">اختر قروباً وشارك تجربتك</div>
+  </div>
+  <div class="groups-grid" id="groups-grid"></div>
+</div>
+
+<!-- ═══ GROUP POSTS SCREEN ═══ -->
+<div id="group-posts-screen" class="screen">
+  <div class="posts-header">
+    <button class="posts-back" onclick="backToGroups()">←</button>
+    <span class="posts-group-ico" id="posts-group-ico"></span>
+    <span class="posts-title" id="posts-group-title"></span>
+    <button class="btn-new-post" onclick="openNewPostModal()">✏️ <span id="btn-post-lbl">منشور</span></button>
+  </div>
+  <div class="posts-list" id="posts-list">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<!-- ═══ NEW POST MODAL ═══ -->
+<div class="modal-back" id="new-post-modal">
+  <div class="new-post-sheet">
+    <div class="fav-handle"><div class="fav-handle-bar"></div></div>
+    <div style="font-size:16px;font-weight:800;text-align:center;margin-bottom:16px" id="new-post-title">منشور جديد</div>
+
+    <!-- Text -->
+    <label class="form-label" id="lbl-post-text">رأيك أو تجربتك *</label>
+    <textarea id="post-text" style="width:100%;height:110px;border-radius:14px;border:1.5px solid #e5e7eb;padding:12px 14px;font-size:14px;font-family:'Cairo',sans-serif;outline:none;resize:none;direction:rtl;text-align:right;margin-bottom:14px" placeholder="مثلاً: وجدت زبدة المرجان بـ 280 دج، جودة ممتازة 🔥"></textarea>
+
+    <!-- Stars (optional) -->
+    <label class="form-label" id="lbl-post-stars">تقييم (اختياري)</label>
+    <div style="display:flex;gap:6px;margin-bottom:14px" id="post-stars-select">
+      <button class="rating-star-btn" style="font-size:28px" data-star="1" onclick="selectPostStar(1)">☆</button>
+      <button class="rating-star-btn" style="font-size:28px" data-star="2" onclick="selectPostStar(2)">☆</button>
+      <button class="rating-star-btn" style="font-size:28px" data-star="3" onclick="selectPostStar(3)">☆</button>
+      <button class="rating-star-btn" style="font-size:28px" data-star="4" onclick="selectPostStar(4)">☆</button>
+      <button class="rating-star-btn" style="font-size:28px" data-star="5" onclick="selectPostStar(5)">☆</button>
+    </div>
+
+    <!-- Link store -->
+    <label class="form-label" id="lbl-post-store">ربط محل (اختياري)</label>
+    <div id="post-store-preview" style="display:none" class="linked-store-preview">
+      <span style="font-size:20px">🏪</span>
+      <span style="flex:1;font-size:13px;font-weight:700" id="post-store-preview-name"></span>
+      <button onclick="clearPostStore()" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:16px">✕</button>
+    </div>
+    <button id="btn-link-store" onclick="openStorePicker()" style="width:100%;height:44px;border-radius:12px;border:1.5px dashed #e5e7eb;background:#fafafa;font-size:13px;font-family:'Cairo',sans-serif;cursor:pointer;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:6px">
+      <span>📍</span><span id="lbl-link-store-btn">اضغط لاختيار محل من الخريطة</span>
+    </button>
+
+    <!-- Image -->
+    <label class="form-label" id="lbl-post-img">صورة (اختياري)</label>
+    <div class="img-upload-wrap" style="margin-bottom:14px">
+      <input type="file" id="post-img-file" accept="image/*" onchange="previewPostImage(this)">
+      <div style="font-size:24px;margin-bottom:4px" id="post-img-icon">📷</div>
+      <div style="font-size:12px;color:var(--muted)" id="post-img-hint">اضغط لإضافة صورة</div>
+      <img id="post-img-preview" class="img-preview">
+    </div>
+
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('new-post-modal')">إلغاء</button>
+      <button class="btn-save" id="btn-submit-post" onclick="submitPost()">🚀 نشر</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ STORE PICKER MODAL ═══ -->
+<div class="modal-back" id="store-picker-modal">
+  <div class="modal">
+    <div style="font-size:15px;font-weight:800;text-align:center;margin-bottom:14px" id="store-picker-title">اختر محلاً</div>
+    <div class="d-search-wrap" style="margin-bottom:10px">
+      <span class="d-search-icon">🔍</span>
+      <input class="d-search-input" id="store-picker-search" oninput="filterStorePicker()" placeholder="ابحث عن محل...">
+    </div>
+    <div id="store-picker-list" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+    <button class="btn-cancel" style="width:100%;margin-top:12px" onclick="closeModal('store-picker-modal')">إلغاء</button>
+  </div>
+</div>
+
 <!-- ═══ FAVORITES SHEET ═══ -->
 <div class="modal-back" id="favorites-sheet">
   <div class="fav-sheet">
@@ -1198,6 +1365,12 @@ const netToast=(msg,type,dur=0)=>{
 window.showScreen=id=>{
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $(id).classList.add('active');
+  /* إخفاء/إظهار الـ Tab Bar */
+  const tb=$('tab-bar');
+  if(tb){
+    const showTab=['customer','community','group-posts-screen'].includes(id);
+    tb.classList.toggle('visible',showTab);
+  }
   if(id==='customer'){
     if(!map) initMap();
     else setTimeout(()=>map&&map.invalidateSize(),300);
@@ -1316,6 +1489,11 @@ function applyLang(){
   $('btn-cancel-filter').textContent=t.cancelBtn;$('btn-apply-filter').textContent=t.applyBtn;
   renderCatBar();renderMapPins();
   if(drawerStoreId)renderDrawerProducts();
+  /* Community labels */
+  if($('tab-map-lbl'))$('tab-map-lbl').textContent=curLang==='ar'?'الخريطة':'Map';
+  if($('tab-comm-lbl'))$('tab-comm-lbl').textContent=curLang==='ar'?'المجتمع':'Community';
+  if($('comm-sub'))$('comm-sub').textContent=curLang==='ar'?'اختر قروباً وشارك تجربتك':'Join a group & share';
+  renderGroups();
 }
 
 /* ══════════════════════════════════════
@@ -2320,6 +2498,293 @@ window.deleteProduct=async(storeId,prodId)=>{
 };
 
 /* ══════════════════════════════════════
+   COMMUNITY — GROUPS & POSTS
+══════════════════════════════════════ */
+const GROUPS=[
+  {id:'clothing',   name:'ملابس وأزياء',    icon:'👗', desc:'أزياء، أحذية، إكسسوارات'},
+  {id:'furniture',  name:'أثاث منزلي',     icon:'🛋️', desc:'أثاث، ديكور، خردوات'},
+  {id:'electronics',name:'إلكترونيات',     icon:'📱', desc:'هواتف، أجهزة، إكسسوارات'},
+  {id:'food',       name:'مواد غذائية',    icon:'🛒', desc:'سوبرماركت، خضار، لحوم'},
+  {id:'beauty',     name:'تجميل وعناية',   icon:'💄', desc:'مكياج، عطور، عناية'},
+  {id:'pharmacy',   name:'صيدلية وصحة',    icon:'💊', desc:'أدوية، مكملات، مستلزمات'},
+  {id:'deals',      name:'عروض وتخفيضات',  icon:'🏷️', desc:'أفضل الصفقات اليومية'},
+];
+
+let currentGroupId=null;
+let selectedPostStars=0;
+let postLinkedStoreId=null;
+let pendingPostImgFile=null;
+
+/* ── Tab switching ── */
+window.switchTab=tab=>{
+  ['map','community'].forEach(t=>{
+    const screen=t==='map'?$('customer'):$('community');
+    const btn=$(t==='map'?'tab-map-btn':'tab-community-btn');
+    if(!screen||!btn)return;
+    screen.classList.toggle('active',t===tab);
+    btn.classList.toggle('active',t===tab);
+  });
+  /* اخفِ group-posts-screen دائماً عند التبديل */
+  $('group-posts-screen')?.classList.remove('active');
+  if(tab==='community') renderGroups();
+  if(tab==='map') setTimeout(()=>map&&map.invalidateSize(),300);
+};
+
+/* ── Render groups list ── */
+function renderGroups(){
+  const grid=$('groups-grid');if(!grid)return;
+  grid.innerHTML=GROUPS.map(g=>`
+    <div class="group-card" onclick="openGroup('${g.id}')">
+      <span class="group-card-ico">${g.icon}</span>
+      <span class="group-card-name">${g.name}</span>
+      <span class="group-card-desc">${g.desc}</span>
+      <span class="group-card-count" id="gc-${g.id}">...</span>
+    </div>`).join('');
+  /* تحميل عدد المنشورات */
+  GROUPS.forEach(g=>{
+    get(ref(db,`community/${g.id}`)).then(s=>{
+      const el=$(`gc-${g.id}`);
+      if(el){const n=s.exists()?Object.keys(s.val()).length:0;
+        el.textContent=`${n} ${curLang==='ar'?'منشور':'posts'}`;}
+    }).catch(()=>{});
+  });
+}
+
+/* ── Open a group ── */
+window.openGroup=groupId=>{
+  currentGroupId=groupId;
+  const g=GROUPS.find(x=>x.id===groupId);
+  $('posts-group-ico').textContent=g?.icon||'👥';
+  $('posts-group-title').textContent=g?.name||'';
+  $('btn-post-lbl').textContent=curLang==='ar'?'منشور':'Post';
+  /* إخفاء شاشة المجتمع وإظهار المنشورات */
+  $('community').classList.remove('active');
+  $('group-posts-screen').classList.add('active');
+  $('posts-list').innerHTML=`<div class="spinner"></div>`;
+  loadPosts(groupId);
+};
+
+window.backToGroups=()=>{
+  $('group-posts-screen').classList.remove('active');
+  $('community').classList.add('active');
+};
+
+/* ── Load posts from Firebase ── */
+function loadPosts(groupId){
+  onValue(ref(db,`community/${groupId}`),snap=>{
+    const posts=snap.val()||{};
+    const sorted=Object.entries(posts)
+      .map(([id,p])=>({id,...p}))
+      .sort((a,b)=>b.ts-a.ts);
+    renderPosts(sorted);
+  },{onlyOnce:true});
+}
+
+function renderPosts(posts){
+  const list=$('posts-list');
+  if(!posts.length){
+    list.innerHTML=`<div class="fav-empty">
+      <div style="font-size:48px;margin-bottom:10px">💬</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px">
+        ${curLang==='ar'?'لا توجد منشورات بعد':'No posts yet'}
+      </div>
+      <div style="font-size:13px">
+        ${curLang==='ar'?'كن أول من يشارك تجربته! ✏️':'Be the first to share! ✏️'}
+      </div>
+    </div>`;return;
+  }
+  list.innerHTML=posts.map(p=>postCardHTML(p)).join('');
+}
+
+function postCardHTML(p){
+  const uid=getUserId();
+  const liked=p.likes&&p.likes[uid];
+  const likeCount=p.likeCount||0;
+  const avatar=p.alias?p.alias.charAt(0).toUpperCase():'?';
+  const storeHTML=p.storeId&&allStores[p.storeId]?`
+    <div class="post-store-link" onclick="flyToStoreFromPost('${p.storeId}')">
+      <span style="font-size:18px">🏪</span>
+      <span class="post-store-link-name">${allStores[p.storeId].name}</span>
+      <span style="font-size:11px;color:var(--or);font-weight:700">${curLang==='ar'?'افتح على الخريطة':'View on map'}</span>
+      <span class="post-store-link-arrow">›</span>
+    </div>`:'';
+  const starsHTML=p.stars?`<div class="post-stars">${'⭐'.repeat(p.stars)}${'☆'.repeat(5-p.stars)}</div>`:'';
+  const imgHTML=p.imageUrl?`<img class="post-img" src="${p.imageUrl}" onerror="this.onerror=null;this.style.display='none'">`:'';
+  return `<div class="post-card" id="post-${p.id}">
+    <div class="post-header">
+      <div class="post-avatar">${avatar}</div>
+      <div style="flex:1;min-width:0">
+        <div class="post-alias">${p.alias||'مستخدم'}</div>
+        <div class="post-time">${timeSince(p.ts)}</div>
+      </div>
+    </div>
+    <div class="post-body">
+      ${starsHTML}
+      <div class="post-text">${p.text||''}</div>
+      ${imgHTML}
+      ${storeHTML}
+    </div>
+    <div class="post-footer">
+      <button class="btn-like ${liked?'liked':''}" onclick="togglePostLike('${p.id}','${currentGroupId}',this)">
+        <span class="like-ico">${liked?'❤️':'🤍'}</span>
+        <span class="like-count">${likeCount||''}</span>
+      </button>
+    </div>
+  </div>`;
+}
+
+/* ── Like / Unlike ── */
+window.togglePostLike=async(postId,groupId,btn)=>{
+  const uid=getUserId();
+  const path=`community/${groupId}/${postId}`;
+  try{
+    const snap=await get(ref(db,`${path}/likes/${uid}`));
+    const liked=snap.exists();
+    if(liked){
+      await remove(ref(db,`${path}/likes/${uid}`));
+      await set(ref(db,`${path}/likeCount`),(await get(ref(db,`${path}/likeCount`))).val()-1||0);
+    }else{
+      await set(ref(db,`${path}/likes/${uid}`),true);
+      await set(ref(db,`${path}/likeCount`),((await get(ref(db,`${path}/likeCount`))).val()||0)+1);
+    }
+    btn.classList.toggle('liked',!liked);
+    btn.querySelector('.like-ico').textContent=liked?'🤍':'❤️';
+    btn.classList.add('popping');
+    setTimeout(()=>btn.classList.remove('popping'),400);
+    /* تحديث العداد */
+    const countSnap=await get(ref(db,`${path}/likeCount`));
+    btn.querySelector('.like-count').textContent=countSnap.val()||'';
+  }catch(e){console.warn('[LIKE]',e);}
+};
+
+/* ── New Post Modal ── */
+window.openNewPostModal=()=>{
+  selectedPostStars=0;postLinkedStoreId=null;pendingPostImgFile=null;
+  $('post-text').value='';
+  $('post-img-preview').style.display='none';
+  $('post-img-icon').style.display='block';
+  $('post-img-hint').textContent=curLang==='ar'?'اضغط لإضافة صورة':'Tap to add image';
+  $('post-store-preview').style.display='none';
+  $('btn-link-store').style.display='flex';
+  document.querySelectorAll('#post-stars-select .rating-star-btn').forEach(b=>{b.textContent='☆';b.style.filter='';});
+  $('new-post-modal').classList.add('open');
+};
+
+window.selectPostStar=n=>{
+  selectedPostStars=n;
+  document.querySelectorAll('#post-stars-select .rating-star-btn').forEach(b=>{
+    const s=parseInt(b.dataset.star);
+    b.textContent=s<=n?'⭐':'☆';
+    b.style.filter=s<=n?'drop-shadow(0 0 3px rgba(245,158,11,.6))':'';
+  });
+};
+
+window.previewPostImage=input=>{
+  const file=input.files[0];if(!file)return;
+  pendingPostImgFile=file;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    $('post-img-preview').src=e.target.result;
+    $('post-img-preview').style.display='block';
+    $('post-img-icon').style.display='none';
+    $('post-img-hint').textContent=file.name;
+  };
+  reader.readAsDataURL(file);
+};
+
+/* ── Store picker ── */
+window.openStorePicker=()=>{
+  $('store-picker-search').value='';
+  filterStorePicker();
+  $('store-picker-modal').classList.add('open');
+};
+
+window.filterStorePicker=()=>{
+  const q=$('store-picker-search').value.toLowerCase();
+  const stores=Object.entries(allStores)
+    .filter(([,s])=>!q||s.name?.toLowerCase().includes(q))
+    .slice(0,30);
+  $('store-picker-list').innerHTML=stores.map(([id,s])=>`
+    <button onclick="selectPostStore('${id}')" style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;border:1px solid var(--border);padding:10px 12px;cursor:pointer;text-align:right;width:100%">
+      <span style="font-size:20px">🏪</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</div>
+        <div style="font-size:10px;color:var(--muted)">${s.location?.address_name||''}</div>
+      </div>
+    </button>`).join('');
+};
+
+window.selectPostStore=id=>{
+  postLinkedStoreId=id;
+  const s=allStores[id];
+  $('post-store-preview-name').textContent=s?.name||'';
+  $('post-store-preview').style.display='flex';
+  $('btn-link-store').style.display='none';
+  closeModal('store-picker-modal');
+};
+
+window.clearPostStore=()=>{
+  postLinkedStoreId=null;
+  $('post-store-preview').style.display='none';
+  $('btn-link-store').style.display='flex';
+};
+
+/* ── Submit post ── */
+window.submitPost=async()=>{
+  const text=$('post-text').value.trim();
+  if(!text){toast(curLang==='ar'?'⚠️ اكتب شيئاً أولاً':'⚠️ Write something first');return;}
+  const btn=$('btn-submit-post');
+  btn.disabled=true;btn.textContent=curLang==='ar'?'جاري النشر...':'Publishing...';
+  let imageUrl=null;
+  if(pendingPostImgFile){
+    try{imageUrl=await compressToBase64(pendingPostImgFile,700,0.78);}
+    catch(e){console.warn('[POST IMG]',e);}
+  }
+  const postData={
+    alias:getUserAlias(),userId:getUserId(),
+    text,stars:selectedPostStars||null,
+    imageUrl:imageUrl||null,
+    storeId:postLinkedStoreId||null,
+    storeName:postLinkedStoreId?allStores[postLinkedStoreId]?.name||null:null,
+    ts:Date.now(),likeCount:0
+  };
+  try{
+    await push(ref(db,`community/${currentGroupId}`),postData);
+    closeModal('new-post-modal');
+    toast(curLang==='ar'?'✅ تم النشر!':'✅ Posted!');
+    loadPosts(currentGroupId);
+  }catch(e){
+    toast((curLang==='ar'?'❌ خطأ: ':'❌ Error: ')+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent=curLang==='ar'?'🚀 نشر':'🚀 Post';
+  }
+};
+
+/* ── Fly to store from post ── */
+window.flyToStoreFromPost=storeId=>{
+  closeModal('new-post-modal');
+  $('group-posts-screen').classList.remove('active');
+  $('community').classList.remove('active');
+  switchTab('map');
+  const s=allStores[storeId];
+  if(s?.location?.lat&&map){
+    map.flyTo([s.location.lat,s.location.lng],16,{animate:true,duration:1});
+    setTimeout(()=>openDrawer(storeId),900);
+  }else openDrawer(storeId);
+};
+
+/* ── User alias ── */
+function getUserAlias(){
+  let a=localStorage.getItem('lango_alias');
+  if(!a){
+    const p=['زبون','مستخدم','عضو','شخص'];
+    a=p[Math.floor(Math.random()*p.length)]+'_'+Math.floor(Math.random()*9999);
+    localStorage.setItem('lango_alias',a);
+  }
+  return a;
+}
+
+/* ══════════════════════════════════════
    FAVORITES SYSTEM
 ══════════════════════════════════════ */
 const FAV_KEY='lango_favorites';
@@ -2835,11 +3300,13 @@ window.stopNavigation=()=>{
 ══════════════════════════════════════ */
 setTimeout(()=>{
   const splash=$('splash');
-  /* تطبيق انيميشن الخروج */
   splash.style.animation='splashExit .45s ease forwards';
   setTimeout(()=>{
     showScreen('customer');
     initMap();
+    /* إظهار الـ Tab Bar بعد الـ Splash */
+    const tb=$('tab-bar');
+    if(tb){tb.classList.add('visible');}
   },420);
 },2200);
 </script>
