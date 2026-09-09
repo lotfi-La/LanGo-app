@@ -304,9 +304,41 @@ select.form-input{appearance:none}
 .delivery-badge.ship{background:#dbeafe;color:#1d4ed8}
 .delivery-badge.cod{background:#dcfce7;color:#15803d}
 
-/* ══════════════════════════════════════
-   BOTTOM TAB BAR
-══════════════════════════════════════ */
+/* ── PRICE COMPARISON ── */
+.comp-sheet{background:#fff;border-radius:24px 24px 0 0;padding:0 16px 40px;width:100%;max-height:92vh;overflow-y:auto}
+.comp-search-wrap{position:relative;margin-bottom:12px}
+.comp-search-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:17px;pointer-events:none}
+#root[dir=ltr] .comp-search-icon{right:auto;left:14px}
+.comp-search-input{width:100%;height:50px;border-radius:14px;border:2px solid var(--border);padding:0 46px 0 14px;font-size:15px;font-family:'Cairo',sans-serif;outline:none;text-align:right;direction:rtl;background:#fafafa;transition:.2s}
+.comp-search-input:focus{border-color:var(--or);background:#fff}
+#root[dir=ltr] .comp-search-input{text-align:left;direction:ltr;padding:0 14px 0 46px}
+.comp-summary{font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px}
+.comp-card{display:flex;align-items:center;gap:10px;background:#fff;border-radius:16px;border:1.5px solid var(--border);padding:12px;margin-bottom:10px;cursor:pointer;transition:.15s;position:relative;overflow:hidden}
+.comp-card:active{transform:scale(.98);border-color:var(--or)}
+.comp-card.cheapest{border-color:#22c55e;background:rgba(34,197,94,.03)}
+.comp-card.cheapest::before{content:'الأرخص 🏆';position:absolute;top:0;left:0;background:#22c55e;color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:0 0 8px 0;font-family:'Cairo',sans-serif}
+#root[dir=ltr] .comp-card.cheapest::before{content:'Cheapest 🏆';left:auto;right:0;border-radius:0 0 0 8px}
+.comp-rank{width:32px;height:32px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#555;flex-shrink:0}
+.comp-card.cheapest .comp-rank{background:#22c55e;color:#fff}
+.comp-info{flex:1;min-width:0}
+.comp-prod{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comp-store{font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comp-badges{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.comp-badge{font-size:9px;padding:2px 6px;border-radius:99px;font-weight:700}
+.comp-badge.open{background:#dcfce7;color:#15803d}
+.comp-badge.closed{background:#fee2e2;color:var(--re)}
+.comp-badge.dist{background:#dbeafe;color:#1d4ed8}
+.comp-badge.out{background:#f1f5f9;color:#94a3b8}
+.comp-price-wrap{text-align:left;flex-shrink:0}
+#root[dir=ltr] .comp-price-wrap{text-align:right}
+.comp-price-main{font-size:16px;font-weight:900;color:var(--or)}
+.comp-price-offer{font-size:10px;color:#bbb;text-decoration:line-through;margin-top:1px}
+.comp-price-hidden{font-size:11px;color:var(--muted);font-style:italic}
+.comp-go{font-size:18px;color:var(--or);flex-shrink:0}
+.btn-comp{background:rgba(249,115,22,.1);border:1.5px solid rgba(249,115,22,.3);border-radius:10px;padding:5px 10px;font-size:13px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer;color:var(--or);display:flex;align-items:center;gap:4px}
+.btn-comp.active{background:var(--or);color:#fff;border-color:var(--or)}
+
+/* ── BOTTOM TAB BAR ── */
 .tab-bar{
   position:fixed;bottom:0;left:0;right:0;z-index:350;
   background:rgba(255,255,255,.97);backdrop-filter:blur(16px);
@@ -572,6 +604,7 @@ select.form-input{appearance:none}
           <div style="font-size:10px;color:var(--muted)" id="store-count">...</div>
         </div>
         <div style="display:flex;gap:5px;align-items:center">
+          <button class="btn-comp" id="btn-comp" onclick="openPriceComparison()">📊</button>
           <button class="btn-fav-header" id="btn-favs" onclick="openFavoritesSheet()" title="المفضلة">
             🤍<span class="fav-badge" id="fav-badge" style="display:none">0</span>
           </button>
@@ -962,6 +995,40 @@ select.form-input{appearance:none}
       <button onclick="closeFilterPanel()" style="flex:1;height:48px;border-radius:14px;background:#f3f4f6;border:none;font-size:14px;font-family:'Cairo',sans-serif;cursor:pointer;color:#555;font-weight:700" id="btn-cancel-filter">إلغاء</button>
       <button onclick="applyAdvancedFilters(true)" style="flex:1;height:48px;border-radius:14px;background:var(--or);color:#fff;border:none;font-size:14px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer" id="btn-apply-filter">تطبيق</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ PRICE COMPARISON MODAL ═══ -->
+<div class="modal-back" id="price-comp-modal">
+  <div class="comp-sheet">
+    <div class="fav-handle"><div class="fav-handle-bar"></div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-size:17px;font-weight:900" id="comp-title">📊 مقارنة الأسعار</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="comp-hint">ابحث عن أي منتج لمقارنة أسعاره</div>
+      </div>
+      <button onclick="closeModal('price-comp-modal')" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer">✕</button>
+    </div>
+
+    <!-- Search -->
+    <div class="comp-search-wrap">
+      <span class="comp-search-icon">🔍</span>
+      <input class="comp-search-input" id="comp-search"
+        placeholder="مثلاً: زيت، حليب، شامبو..."
+        oninput="onCompSearch(this.value)"
+        onkeydown="if(event.key==='Enter')searchPrices(this.value)">
+    </div>
+
+    <!-- Sort options -->
+    <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px">
+      <button class="filter-btn active" id="sort-price"    onclick="setCompSort('price',this)"   id="lbl-sort-price">💰 الأرخص</button>
+      <button class="filter-btn"        id="sort-dist"     onclick="setCompSort('dist',this)"    id="lbl-sort-dist">📍 الأقرب</button>
+      <button class="filter-btn"        id="sort-open"     onclick="setCompSort('open',this)"    id="lbl-sort-open">🟢 المفتوح</button>
+    </div>
+
+    <!-- Results -->
+    <div class="comp-summary" id="comp-summary"></div>
+    <div id="comp-results"></div>
   </div>
 </div>
 
@@ -2495,6 +2562,144 @@ window.deleteProduct=async(storeId,prodId)=>{
     const names=Object.values(allProds).map(p=>p.name).filter(Boolean);
     await update(ref(db,`stores/${storeId}`),{product_names:names});
   }catch(e){toast(t.saveErr+e.message);}
+};
+
+/* ══════════════════════════════════════
+   PRICE COMPARISON
+══════════════════════════════════════ */
+let compSort='price';
+let compSearchTimer=null;
+let compResults=[];
+
+window.openPriceComparison=()=>{
+  $('comp-search').value='';
+  $('comp-results').innerHTML='';
+  $('comp-summary').textContent='';
+  compResults=[];
+  $('price-comp-modal').classList.add('open');
+  setTimeout(()=>$('comp-search').focus(),300);
+};
+
+window.setCompSort=(type,btn)=>{
+  compSort=type;
+  document.querySelectorAll('#price-comp-modal .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(compResults.length) renderCompResults(compResults);
+};
+
+/* debounce البحث — ينتظر 600ms بعد آخر حرف */
+window.onCompSearch=q=>{
+  clearTimeout(compSearchTimer);
+  if(q.trim().length<2){$('comp-results').innerHTML='';$('comp-summary').textContent='';return;}
+  $('comp-results').innerHTML=`<div style="text-align:center;padding:24px"><div class="spinner"></div></div>`;
+  compSearchTimer=setTimeout(()=>searchPrices(q.trim()),600);
+};
+
+async function searchPrices(query){
+  if(!query||query.length<2)return;
+  const q=query.toLowerCase();
+  const results=[];
+  const storeIds=Object.keys(allStores);
+
+  /* تحميل منتجات كل المحلات بالتوازي */
+  await Promise.all(storeIds.map(async sid=>{
+    try{
+      /* الكاش أولاً لتجنب تحميل كل مرة */
+      const cached=loadFromCache();
+      let prods=cached?.products?.[sid]||null;
+      if(!prods){
+        const snap=await get(ref(db,`products/${sid}`));
+        prods=snap.val()||{};
+        saveProdToCache(sid,prods);
+      }
+      const store=allStores[sid];
+      Object.entries(prods).forEach(([pid,p])=>{
+        if(!p.name?.toLowerCase().includes(q))return;
+        const effPrice=p.offer_price&&p.offer_price<p.price?p.offer_price:p.price;
+        const dist=store.location?.lat?calcDist(userLat,userLng,store.location.lat,store.location.lng):null;
+        results.push({
+          sid,pid,storeName:store.name,
+          prodName:p.name,price:effPrice,
+          originalPrice:p.price,
+          hasOffer:!!(p.offer_price&&p.offer_price<p.price),
+          inStock:!!p.in_stock,
+          hidePrice:!!p.hide_price,
+          isOpen:storeIsOpen(store),
+          dist
+        });
+      });
+    }catch(e){console.warn('[COMP]',sid,e);}
+  }));
+
+  compResults=results;
+  renderCompResults(results);
+}
+
+function renderCompResults(results){
+  /* ترتيب حسب الاختيار */
+  const sorted=[...results].sort((a,b)=>{
+    if(compSort==='open'){
+      if(a.isOpen!==b.isOpen)return b.isOpen-a.isOpen;
+    }
+    if(compSort==='dist'){
+      if(a.dist!==null&&b.dist!==null)return a.dist-b.dist;
+    }
+    /* السعر: المخفي في الآخر، نفذ قبل الآخر */
+    if(a.hidePrice&&!b.hidePrice)return 1;
+    if(!a.hidePrice&&b.hidePrice)return-1;
+    if(!a.inStock&&b.inStock)return 1;
+    if(a.inStock&&!b.inStock)return-1;
+    return a.price-b.price;
+  });
+
+  const q=$('comp-search').value.trim();
+  if(!sorted.length){
+    $('comp-results').innerHTML=`<div class="fav-empty">
+      <div style="font-size:44px;margin-bottom:10px">🔍</div>
+      <div style="font-size:14px;font-weight:700">${curLang==='ar'?`لا يوجد منتج باسم "${q}" في أي محل`:`No product "${q}" found`}</div>
+      <div style="font-size:12px;margin-top:6px;color:var(--muted)">${curLang==='ar'?'جرّب كلمة أخرى أو تأكد من المحلات القريبة':'Try another word or check nearby stores'}</div>
+    </div>`;
+    $('comp-summary').textContent='';
+    return;
+  }
+
+  const cheapestPrice=sorted.find(r=>!r.hidePrice&&r.inStock)?.price;
+  $('comp-summary').textContent=curLang==='ar'
+    ?`وُجد في ${sorted.length} محل — أرخص سعر: ${cheapestPrice?`${cheapestPrice.toLocaleString('ar-DZ')} د.ج`:'—'}`
+    :`Found in ${sorted.length} stores — Cheapest: ${cheapestPrice?`${cheapestPrice} DZD`:'—'}`;
+
+  $('comp-results').innerHTML=sorted.map((r,i)=>{
+    const isCheapest=i===0&&!r.hidePrice&&r.inStock;
+    const distTxt=r.dist!==null?`${r.dist.toFixed(1)} ${curLang==='ar'?'كم':'km'}`:'';
+    const openBadge=r.isOpen
+      ?`<span class="comp-badge open">${curLang==='ar'?'مفتوح':'Open'}</span>`
+      :`<span class="comp-badge closed">${curLang==='ar'?'مغلق':'Closed'}</span>`;
+    const distBadge=distTxt?`<span class="comp-badge dist">📍 ${distTxt}</span>`:'';
+    const stockBadge=r.inStock?'':`<span class="comp-badge out">${curLang==='ar'?'نفذ':'Out'}</span>`;
+    const priceHTML=r.hidePrice
+      ?`<div class="comp-price-hidden">${curLang==='ar'?'اتصل للسعر':'Call'}</div>`
+      :`<div class="comp-price-main">${r.price.toLocaleString('ar-DZ')} ${curLang==='ar'?'د.ج':'DZD'}</div>
+        ${r.hasOffer?`<div class="comp-price-offer">${r.originalPrice.toLocaleString('ar-DZ')}</div>`:''}`;
+    return `<div class="comp-card ${isCheapest?'cheapest':''}" onclick="flyToStoreComp('${r.sid}')">
+      <div class="comp-rank">${i+1}</div>
+      <div class="comp-info">
+        <div class="comp-prod">${r.prodName}</div>
+        <div class="comp-store">🏪 ${r.storeName}</div>
+        <div class="comp-badges">${openBadge}${distBadge}${stockBadge}</div>
+      </div>
+      <div class="comp-price-wrap">${priceHTML}</div>
+      <span class="comp-go">›</span>
+    </div>`;
+  }).join('');
+}
+
+window.flyToStoreComp=sid=>{
+  closeModal('price-comp-modal');
+  const s=allStores[sid];
+  if(s?.location?.lat&&map){
+    map.flyTo([s.location.lat,s.location.lng],16,{animate:true,duration:1});
+    setTimeout(()=>openDrawer(sid),900);
+  }else openDrawer(sid);
 };
 
 /* ══════════════════════════════════════
