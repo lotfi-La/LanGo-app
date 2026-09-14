@@ -304,6 +304,29 @@ select.form-input{appearance:none}
 .delivery-badge.ship{background:#dbeafe;color:#1d4ed8}
 .delivery-badge.cod{background:#dcfce7;color:#15803d}
 
+/* ── ONBOARDING & DISCLAIMER ── */
+.ob-overlay{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:0}
+.ob-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(3px)}
+.ob-card{position:relative;z-index:1;background:#fff;border-radius:28px 28px 0 0;width:100%;padding:24px 22px 44px;max-height:90vh;overflow-y:auto}
+.ob-step{display:none}
+.ob-step.active{display:block}
+.ob-icon{font-size:52px;text-align:center;margin-bottom:12px}
+.ob-title{font-size:20px;font-weight:900;text-align:center;color:#111;margin-bottom:8px}
+.ob-text{font-size:14px;color:#555;text-align:center;line-height:1.7;margin-bottom:20px}
+.ob-dots{display:flex;justify-content:center;gap:6px;margin-bottom:20px}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:#e5e7eb;transition:.2s}
+.ob-dot.active{width:24px;background:var(--or);border-radius:4px}
+.ob-btn-next{width:100%;height:52px;border-radius:16px;background:var(--or);color:#fff;border:none;font-size:16px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer;margin-bottom:10px}
+.ob-btn-skip{width:100%;height:40px;border-radius:12px;background:none;color:#aaa;border:none;font-size:13px;font-family:'Cairo',sans-serif;cursor:pointer}
+.ob-feature-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;text-align:right}
+.ob-feature{display:flex;align-items:center;gap:10px;background:#faf5ef;border-radius:12px;padding:10px 12px}
+.ob-feature-ico{font-size:22px;flex-shrink:0}
+.ob-feature-txt{font-size:13px;font-weight:600;color:#333}
+/* Disclaimer */
+.disclaimer-check{display:flex;align-items:flex-start;gap:10px;background:#fff8f0;border-radius:12px;padding:12px;border:1.5px solid var(--border);cursor:pointer;margin-bottom:16px}
+.disclaimer-check input{width:18px;height:18px;accent-color:var(--or);flex-shrink:0;margin-top:2px;cursor:pointer}
+.disclaimer-text{font-size:12px;color:#555;line-height:1.7}
+
 /* ── PRICE COMPARISON ── */
 .comp-sheet{background:#fff;border-radius:24px 24px 0 0;padding:0 16px 40px;width:100%;max-height:92vh;overflow-y:auto}
 .comp-search-wrap{position:relative;margin-bottom:12px}
@@ -998,6 +1021,110 @@ select.form-input{appearance:none}
   </div>
 </div>
 
+<!-- ═══ ONBOARDING + DISCLAIMER ═══ -->
+<div id="ob-overlay" class="ob-overlay" style="display:none">
+  <div class="ob-backdrop" onclick=""></div>
+  <div class="ob-card">
+
+    <!-- Step 0: Disclaimer -->
+    <div class="ob-step active" id="ob-step-0">
+      <div class="ob-icon">⚖️</div>
+      <div class="ob-title" id="ob-dis-title">إخلاء مسؤولية</div>
+      <div class="ob-text" id="ob-dis-text">
+        LanGo منصة لعرض أسعار المحلات من قِبل التجار أنفسهم.
+        لا نضمن دقة الأسعار أو توفر البضائع أو جودة المنتجات.
+        التحقق النهائي يبقى مسؤولية المستخدم.
+      </div>
+      <div class="disclaimer-check" onclick="document.getElementById('dis-check').click()">
+        <input type="checkbox" id="dis-check">
+        <div class="disclaimer-text" id="ob-dis-check-lbl">
+          أفهم وأوافق على أن LanGo غير مسؤول عن دقة الأسعار،
+          توفر البضائع، أو جودة المنتجات المعروضة.
+        </div>
+      </div>
+      <button class="ob-btn-next" id="btn-dis-next" onclick="obNext()" disabled
+        style="opacity:.5;cursor:not-allowed">
+        <span id="ob-dis-btn-lbl">أوافق وأكمل</span>
+      </button>
+    </div>
+
+    <!-- Step 1: Welcome -->
+    <div class="ob-step" id="ob-step-1">
+      <div class="ob-icon">👍</div>
+      <div class="ob-title" id="ob-w-title">أهلاً بك في LanGo</div>
+      <div class="ob-text" id="ob-w-text">اكتشف أسعار المحلات القريبة منك وقارن بينها بسهولة</div>
+      <div class="ob-feature-list">
+        <div class="ob-feature"><span class="ob-feature-ico">🗺️</span><span class="ob-feature-txt" id="ob-f1">خريطة تفاعلية تعرض المحلات القريبة</span></div>
+        <div class="ob-feature"><span class="ob-feature-ico">📊</span><span class="ob-feature-txt" id="ob-f2">قارن الأسعار بين جميع المحلات</span></div>
+        <div class="ob-feature"><span class="ob-feature-ico">🧭</span><span class="ob-feature-txt" id="ob-f3">ملاحة GPS للوصول لأي محل</span></div>
+        <div class="ob-feature"><span class="ob-feature-ico">👥</span><span class="ob-feature-txt" id="ob-f4">مجتمع يشارك التجارب والعروض</span></div>
+      </div>
+      <div class="ob-dots">
+        <div class="ob-dot active"></div>
+        <div class="ob-dot"></div>
+        <div class="ob-dot"></div>
+      </div>
+      <button class="ob-btn-next" onclick="obNext()" id="ob-btn-1"><span id="ob-next-1">التالي</span></button>
+      <button class="ob-btn-skip" onclick="obSkip()" id="ob-skip-1"><span id="ob-skip-lbl">تخطى</span></button>
+    </div>
+
+    <!-- Step 2: Map features -->
+    <div class="ob-step" id="ob-step-2">
+      <div class="ob-icon">🔍</div>
+      <div class="ob-title" id="ob-s2-title">كيف تستخدم الخريطة</div>
+      <div class="ob-text" id="ob-s2-text">اضغط على أي دبوس لعرض تفاصيل المحل وأسعاره</div>
+      <div class="ob-feature-list">
+        <div class="ob-feature"><span class="ob-feature-ico">🔍</span><span class="ob-feature-txt" id="ob-s2-f1">اضغط 🔍 للبحث عن منتج أو محل</span></div>
+        <div class="ob-feature"><span class="ob-feature-ico">📊</span><span class="ob-feature-txt" id="ob-s2-f2">اضغط 📊 لمقارنة الأسعار فوراً</span></div>
+        <div class="ob-feature"><span class="ob-feature-ico">❤️</span><span class="ob-feature-ico-txt" id="ob-s2-f3">اضغط 🤍 لحفظ محلاتك المفضلة</span></div>
+        <div class="ob-feature"><span class="ob-feature-ico">🎯</span><span class="ob-feature-txt" id="ob-s2-f4">اضغط 🎯 للفلاتر المتقدمة</span></div>
+      </div>
+      <div class="ob-dots">
+        <div class="ob-dot"></div>
+        <div class="ob-dot active"></div>
+        <div class="ob-dot"></div>
+      </div>
+      <button class="ob-btn-next" onclick="obNext()" id="ob-btn-2"><span id="ob-next-2">التالي</span></button>
+      <button class="ob-btn-skip" onclick="obSkip()"><span id="ob-skip-2">تخطى</span></button>
+    </div>
+
+    <!-- Step 3: Community -->
+    <div class="ob-step" id="ob-step-3">
+      <div class="ob-icon">👥</div>
+      <div class="ob-title" id="ob-s3-title">انضم للمجتمع</div>
+      <div class="ob-text" id="ob-s3-text">شارك تجربتك مع المحلات وساعد الآخرين في اتخاذ قراراتهم</div>
+      <div class="ob-feature-list">
+        <div class="ob-feature"><span class="ob-feature-ico">✏️</span><span class="ob-feature-txt" id="ob-s3-f1">انشر رأيك عن أي محل أو منتج</span></div>
+        <div class="ob-feature"><span class="ob-feature-ico">⭐</span><span class="ob-feature-txt" id="ob-s3-f2">قيّم المحلات بالنجوم</span></div>
+        <div class="ob-feature"><span class="ob-feature-ico">📷</span><span class="ob-feature-ico-txt" id="ob-s3-f3">امسح الباركود لإضافة منتج بسرعة</span></div>
+      </div>
+      <div class="ob-dots">
+        <div class="ob-dot"></div>
+        <div class="ob-dot"></div>
+        <div class="ob-dot active"></div>
+      </div>
+      <button class="ob-btn-next" onclick="obFinish()" id="ob-btn-3"><span id="ob-finish-lbl">ابدأ الاستخدام 🚀</span></button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ ADMIN PANEL MODAL ═══ -->
+<div class="modal-back" id="admin-modal">
+  <div class="modal" style="max-height:90vh">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-size:17px;font-weight:900">🛡️ لوحة تحكم المالك</div>
+        <div style="font-size:11px;color:var(--muted)" id="admin-count">جاري التحميل...</div>
+      </div>
+      <button onclick="closeModal('admin-modal')" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer">✕</button>
+    </div>
+    <div id="admin-stores-list" style="max-height:65vh;overflow-y:auto">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ PRICE COMPARISON MODAL ═══ -->
 <div class="modal-back" id="price-comp-modal">
   <div class="comp-sheet">
@@ -1411,7 +1538,7 @@ let searchQuery='';
 // Navigation state
 let navWatchId=null, navPolyline=null, navPolylineDone=null;
 let navRouteCoords=[], navTargetStore=null;
-let navLastUpdate=0;
+let navLastUpdate=0, navProgressIdx=0;
 // Pending image upload file
 let pendingImgFile=null;
 let pendingCoverFile=null;
@@ -2245,7 +2372,11 @@ const showAuthOk =msg=>{const e=$('auth-ok'); e.style.display='block';e.textCont
 
 onAuthStateChanged(auth,user=>{
   currentUser=user;
-  if(user){$('seller-email').textContent=user.email;loadSellerStores();}
+  if(user){
+    $('seller-email').textContent=user.email;
+    loadSellerStores();
+    checkAdminUI(); /* إظهار زر Admin للمالك */
+  }
 });
 
 window.doAuth=async()=>{
@@ -2562,6 +2693,128 @@ window.deleteProduct=async(storeId,prodId)=>{
     const names=Object.values(allProds).map(p=>p.name).filter(Boolean);
     await update(ref(db,`stores/${storeId}`),{product_names:names});
   }catch(e){toast(t.saveErr+e.message);}
+};
+
+/* ══════════════════════════════════════
+   ONBOARDING + DISCLAIMER
+══════════════════════════════════════ */
+const OB_KEY='lango_welcomed_v2';
+let obCurrentStep=0;
+const OB_TOTAL=4; /* 0=disclaimer, 1-3=steps */
+
+function initOnboarding(){
+  if(localStorage.getItem(OB_KEY))return; /* شاهده من قبل */
+  obCurrentStep=0;
+  showObStep(0);
+  $('ob-overlay').style.display='flex';
+  /* تفعيل الـ checkbox */
+  const cb=$('dis-check');
+  const btn=$('btn-dis-next');
+  cb.addEventListener('change',()=>{
+    btn.disabled=!cb.checked;
+    btn.style.opacity=cb.checked?'1':'0.5';
+    btn.style.cursor=cb.checked?'pointer':'not-allowed';
+  });
+}
+
+function showObStep(n){
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+  const step=$(`ob-step-${n}`);
+  if(step)step.classList.add('active');
+}
+
+window.obNext=()=>{
+  obCurrentStep++;
+  if(obCurrentStep>=OB_TOTAL){obFinish();return;}
+  showObStep(obCurrentStep);
+};
+
+window.obSkip=()=>obFinish();
+
+window.obFinish=()=>{
+  localStorage.setItem(OB_KEY,'1');
+  $('ob-overlay').style.display='none';
+};
+
+/* تحديث نصوص الـ Onboarding عند تغيير اللغة */
+function applyObLang(){
+  if(curLang==='en'){
+    if($('ob-dis-title'))$('ob-dis-title').textContent='Disclaimer';
+    if($('ob-dis-text'))$('ob-dis-text').textContent='LanGo is a platform where store owners list their own prices. We do not guarantee accuracy of prices, product availability, or quality.';
+    if($('ob-dis-check-lbl'))$('ob-dis-check-lbl').textContent='I understand that LanGo is not responsible for prices, availability, or product quality.';
+    if($('ob-dis-btn-lbl'))$('ob-dis-btn-lbl').textContent='I Agree & Continue';
+    if($('ob-w-title'))$('ob-w-title').textContent='Welcome to LanGo';
+    if($('ob-w-text'))$('ob-w-text').textContent='Discover nearby store prices and compare them easily';
+    if($('ob-finish-lbl'))$('ob-finish-lbl').textContent='Start Exploring 🚀';
+    document.querySelectorAll('[id^="ob-next"]').forEach(e=>e.textContent='Next');
+    document.querySelectorAll('[id^="ob-skip"]').forEach(e=>e.textContent='Skip');
+  }
+}
+
+/* ══════════════════════════════════════
+   ADMIN PANEL
+══════════════════════════════════════ */
+const ADMIN_EMAIL='lotfi.lango.admin@gmail.com'; /* غيّر هذا لبريدك */
+
+function isAdmin(){return currentUser?.email===ADMIN_EMAIL;}
+
+function checkAdminUI(){
+  const existing=$('btn-admin-panel');
+  if(isAdmin()&&!existing){
+    const header=document.querySelector('.s-header');
+    if(header){
+      const btn=document.createElement('button');
+      btn.id='btn-admin-panel';
+      btn.onclick=openAdminPanel;
+      btn.style.cssText='background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:800;font-family:Cairo,sans-serif;cursor:pointer';
+      btn.innerHTML='🛡️ Admin';
+      header.appendChild(btn);
+    }
+  }
+}
+
+window.openAdminPanel=async()=>{
+  if(!isAdmin()){toast('⛔ غير مصرح');return;}
+  $('admin-modal').classList.add('open');
+  await loadAdminStores();
+};
+
+async function loadAdminStores(){
+  const list=$('admin-stores-list');
+  list.innerHTML=`<div class="spinner"></div>`;
+  try{
+    const snap=await get(ref(db,'stores'));
+    const stores=snap.val()||{};
+    const sorted=Object.entries(stores).sort((a,b)=>(b[1].created_at||0)-(a[1].created_at||0));
+    $('admin-count').textContent=`${sorted.length} ${curLang==='ar'?'محل مسجل':'stores'}`;
+    if(!sorted.length){list.innerHTML=`<div class="empty"><div style="font-size:40px">🏪</div><div>لا توجد محلات</div></div>`;return;}
+    list.innerHTML=sorted.map(([id,s])=>`
+      <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;border:1px solid var(--border);padding:10px 12px;margin-bottom:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${s.owner||'—'} • ${s.location?.address_name||''}</div>
+          <div style="font-size:10px;color:var(--muted)">${s.created_at?new Date(s.created_at).toLocaleDateString('ar'):''}</div>
+        </div>
+        <button onclick="adminDeleteStore('${id}','${s.name.replace(/'/g,"&#39;")}')"
+          style="background:#fee2e2;border:none;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;font-family:Cairo,sans-serif;cursor:pointer;color:var(--re);flex-shrink:0">
+          🗑️ حذف
+        </button>
+      </div>`).join('');
+  }catch(e){list.innerHTML=`<div class="empty">❌ ${e.message}</div>`;}
+}
+
+window.adminDeleteStore=async(storeId,storeName)=>{
+  if(!isAdmin()){toast('⛔ غير مصرح');return;}
+  if(!confirm(`حذف "${storeName}"?\nسيُحذف المحل وجميع منتجاته نهائياً.`))return;
+  try{
+    await Promise.all([
+      remove(ref(db,`stores/${storeId}`)),
+      remove(ref(db,`products/${storeId}`)),
+      remove(ref(db,`ratings/${storeId}`))
+    ]);
+    toast(`🗑️ تم حذف "${storeName}"`);
+    await loadAdminStores();
+  }catch(e){toast('❌ خطأ: '+e.message);}
 };
 
 /* ══════════════════════════════════════
@@ -3366,7 +3619,8 @@ window.startNavigation=async storeId=>{
     if(!data.routes?.length){toast('❌ لم يُوجد مسار بين الموقعين');return;}
 
     const route=data.routes[0];
-    navRouteCoords=route.geometry.coordinates; /* [[lng,lat],...] */
+    navRouteCoords=route.geometry.coordinates;
+    navProgressIdx=0; /* إعادة ضبط مؤشر التقدم */ /* [[lng,lat],...] */
     const distKm=(route.distance/1000).toFixed(1);
     const durMin=Math.ceil(route.duration/60);
 
@@ -3442,27 +3696,42 @@ function _startWatch(){
   );
 }
 
-/* ── تحديث التقدم (Progress Tracing) ── */
+/* ── تحديث التقدم (اتجاهي — لا يرجع للخلف) ── */
 function _updateProgress(){
   if(!navRouteCoords.length||!navPolyline)return;
   const uLL=L.latLng(userLat,userLng);
 
-  /* أقرب نقطة على المسار */
-  let minD=Infinity,idx=0;
-  navRouteCoords.forEach((c,i)=>{
-    const d=uLL.distanceTo(L.latLng(c[1],c[0]));
-    if(d<minD){minD=d;idx=i;}
-  });
+  /* نبحث فقط للأمام + هامش صغير للخلف (5 نقاط) */
+  const lookBack=5;
+  const lookFwd=Math.min(60, navRouteCoords.length - navProgressIdx);
+  const start=Math.max(0, navProgressIdx - lookBack);
+  const end=Math.min(navRouteCoords.length-1, navProgressIdx + lookFwd);
+
+  let minD=Infinity, bestIdx=navProgressIdx;
+  for(let i=start;i<=end;i++){
+    const d=uLL.distanceTo(L.latLng(navRouteCoords[i][1],navRouteCoords[i][0]));
+    if(d<minD){minD=d;bestIdx=i;}
+  }
+
+  /* نتقدم للأمام فقط — إذا كان المستخدم يرجع للخلف نبقى في نفس النقطة */
+  navProgressIdx=Math.max(navProgressIdx, bestIdx);
+
+  /* إذا انحرف المستخدم كثيراً (>80م) → اقترح إعادة الحساب */
+  if(minD > 80 && !window._navRerouteToast){
+    window._navRerouteToast=true;
+    toast(curLang==='ar'?'⚠️ انحرفت عن المسار':'⚠️ Off route',3000);
+    setTimeout(()=>{window._navRerouteToast=false;},15000);
+  }
 
   /* قسّم المسار: مقطوع + متبقٍّ */
-  const done=navRouteCoords.slice(0,idx+1).map(c=>[c[1],c[0]]);
-  const rem =navRouteCoords.slice(idx).map(c=>[c[1],c[0]]);
+  const done=navRouteCoords.slice(0,navProgressIdx+1).map(c=>[c[1],c[0]]);
+  const rem =navRouteCoords.slice(navProgressIdx).map(c=>[c[1],c[0]]);
   navPolylineDone?.setLatLngs(done);
   navPolyline?.setLatLngs(rem);
 
   /* المسافة المتبقية */
   let remM=0;
-  for(let i=idx;i<navRouteCoords.length-1;i++){
+  for(let i=navProgressIdx;i<navRouteCoords.length-1;i++){
     remM+=L.latLng(navRouteCoords[i][1],navRouteCoords[i][0])
            .distanceTo(L.latLng(navRouteCoords[i+1][1],navRouteCoords[i+1][0]));
   }
@@ -3471,14 +3740,11 @@ function _updateProgress(){
   $('nav-dist').textContent=remM<100?`${Math.round(remM)} م`:`${remKm} كم`;
   $('nav-time').textContent=`~${remMin} ${curLang==='ar'?'دقيقة':'min'}`;
 
-  /* تتبع الخريطة خلف المستخدم */
+  /* تتبع الخريطة */
   map.panTo([userLat,userLng],{animate:true,duration:.6,noMoveStart:true});
 
   /* وصلت! */
-  if(remM<60){
-    toast('🎉 وصلت إلى وجهتك!',4000);
-    stopNavigation();
-  }
+  if(remM<60){toast('🎉 '+(curLang==='ar'?'وصلت إلى وجهتك!':'You arrived!'),4000);stopNavigation();}
 }
 
 /* ── تنظيف المسار من الخريطة ── */
@@ -3509,9 +3775,10 @@ setTimeout(()=>{
   setTimeout(()=>{
     showScreen('customer');
     initMap();
-    /* إظهار الـ Tab Bar بعد الـ Splash */
     const tb=$('tab-bar');
     if(tb){tb.classList.add('visible');}
+    /* Onboarding أول مرة */
+    setTimeout(initOnboarding, 800);
   },420);
 },2200);
 </script>
